@@ -14,8 +14,8 @@ dist/
 out/
 build/
 
-# Prisma
-prisma/migrations/
+# Prisma — keep migrations tracked in git
+# prisma/migrations/
 
 # Logs
 *.log

@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "moduleResolution": "node",
+    "baseUrl": "..",
+    "paths": {
+      "@prisma/client": ["./server/node_modules/@prisma/client"],
+      "bcrypt": ["./server/node_modules/bcrypt"]
+    }
+  },
+  "include": ["seed.ts"]
+}
