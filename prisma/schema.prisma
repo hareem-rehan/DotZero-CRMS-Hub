@@ -1,0 +1,368 @@
+// DotZero CRMS — Prisma Schema
+// Version: 2.1 | April 2026
+// Reference: DotZero_CRMS_Product_Spec.md (Section 9: Key Data Entities)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  PRODUCT_OWNER
+  DELIVERY_MANAGER
+  FINANCE
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  DELIVERED
+  ARCHIVED
+}
+
+enum CRStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ESTIMATED
+  RESUBMITTED
+  APPROVED
+  DECLINED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ChangeType {
+  SCOPE
+  TIMELINE
+  BOTH
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  AED
+  PKR
+  SAR
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  passwordHash        String
+  role                Role
+  phone               String?
+  timezone            String?   @default("UTC")
+  isActive            Boolean   @default(true)
+  isLocked            Boolean   @default(false)
+  failedLoginAttempts Int       @default(0)
+  lastLogin           DateTime?
+  passwordSetAt       DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Notification preferences
+  notifyOnCrSubmitted Boolean @default(true)
+  notifyOnCrReturned  Boolean @default(true)
+  notifyOnCrApproved  Boolean @default(true)
+  notifyOnCrDeclined  Boolean @default(true)
+
+  // Relations
+  projectAssignments  ProjectUser[]
+  managedProjects     Project[]          @relation("ProjectDM")
+  submittedCRs        ChangeRequest[]    @relation("CRSubmitter")
+  impactAnalyses      ImpactAnalysis[]
+  crApprovals         CRApproval[]
+  crVersions          CRVersion[]
+  statusChanges       StatusHistory[]
+  internalNotes       InternalNote[]
+  auditLogs           AuditLog[]
+  sentInvitations     Invitation[]       @relation("InvitationSender")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+// ─── Project ─────────────────────────────────────────────────────────────────
+
+model Project {
+  id            String        @id @default(cuid())
+  name          String
+  clientName    String
+  code          String        @unique    // Used in CR numbering: [CODE]-CO-001
+  hourlyRate    Decimal       @db.Decimal(10, 2)
+  currency      Currency      @default(USD)
+  status        ProjectStatus @default(ACTIVE)
+  startDate     DateTime?
+  showRateToDm  Boolean       @default(false)  // Controls whether DM can see hourly rate
+  sowReference  String?                         // Default SOW ref for CRs in this project
+  crSequence    Int           @default(0)       // Auto-increment counter for CR numbering
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  assignedDmId  String?
+  assignedDm    User?              @relation("ProjectDM", fields: [assignedDmId], references: [id], onDelete: SetNull)
+  userAssignments ProjectUser[]
+  attachments   ProjectAttachment[]
+  changeRequests ChangeRequest[]
+  invitations   Invitation[]
+
+  @@index([code])
+  @@index([status])
+  @@index([assignedDmId])
+  @@map("projects")
+}
+
+// ─── ProjectUser (join table) ────────────────────────────────────────────────
+
+model ProjectUser {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@map("project_users")
+}
+
+// ─── ProjectAttachment ───────────────────────────────────────────────────────
+
+model ProjectAttachment {
+  id         String   @id @default(cuid())
+  projectId  String
+  fileName   String
+  fileUrl    String
+  fileSize   Int               // bytes
+  mimeType   String
+  uploadedAt DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_attachments")
+}
+
+// ─── Invitation ──────────────────────────────────────────────────────────────
+
+model Invitation {
+  id        String    @id @default(cuid())
+  email     String
+  projectId String
+  role      Role      @default(PRODUCT_OWNER)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  sentById  String
+  createdAt DateTime  @default(now())
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sentBy    User      @relation("InvitationSender", fields: [sentById], references: [id])
+
+  @@index([token])
+  @@index([email])
+  @@map("invitations")
+}
+
+// ─── ChangeRequest ───────────────────────────────────────────────────────────
+
+model ChangeRequest {
+  id                    String     @id @default(cuid())
+  crNumber              String     @unique    // e.g. DZERO-CO-001
+  projectId             String
+  submittedById         String
+  title                 String
+  description           String     @db.Text   // Rich text (HTML)
+  businessJustification String     @db.Text
+  priority              Priority   @default(MEDIUM)
+  changeType            ChangeType @default(SCOPE)
+  requestingParty       String?               // Auto-set to client name, editable
+  status                CRStatus   @default(DRAFT)
+  version               Int        @default(1)
+  sowRef                String?               // Auto-populated from project
+  dateOfRequest         DateTime?             // Set on first submission, not draft creation
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  submittedBy       User             @relation("CRSubmitter", fields: [submittedById], references: [id])
+  attachments       CRAttachment[]
+  impactAnalysis    ImpactAnalysis?
+  approval          CRApproval?
+  versions          CRVersion[]
+  statusHistory     StatusHistory[]
+  internalNotes     InternalNote[]
+
+  @@index([projectId])
+  @@index([submittedById])
+  @@index([status])
+  @@index([crNumber])
+  @@index([projectId, status])
+  @@index([createdAt])
+  @@map("change_requests")
+}
+
+// ─── CRAttachment ────────────────────────────────────────────────────────────
+
+model CRAttachment {
+  id              String   @id @default(cuid())
+  changeRequestId String
+  fileName        String
+  fileUrl         String
+  fileSize        Int               // bytes, max 10MB enforced at API level
+  mimeType        String
+  uploadedAt      DateTime @default(now())
+
+  changeRequest   ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+
+  @@index([changeRequestId])
+  @@map("cr_attachments")
+}
+
+// ─── ImpactAnalysis (DM Estimation) ──────────────────────────────────────────
+// NOTE: No hourlyRate or totalCost fields here.
+// Cost is calculated server-side: estimatedHours × project.hourlyRate
+// and returned ONLY in SA/Finance API responses — never to DM.
+
+model ImpactAnalysis {
+  id                    String    @id @default(cuid())
+  changeRequestId       String    @unique
+  dmId                  String
+  estimatedHours        Decimal   @db.Decimal(10, 2)  // The ONLY financial input from DM
+  timelineImpact        String    @db.Text             // e.g. "+3 days to Milestone 3"
+  affectedDeliverables  String    @db.Text             // Knock-on effects
+  revisedMilestones     String?   @db.Text             // Optional
+  resourcesRequired     String?   @db.Text             // Optional
+  recommendation        String    @db.Text             // DM's overall recommendation
+  dmSignature           String?   @db.Text             // Base64 encoded signature image or typed name
+  isDraft               Boolean   @default(true)       // Draft = not yet returned to PO
+  submittedAt           DateTime?                       // Set when DM returns to PO
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  changeRequest         ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  dm                    User          @relation(fields: [dmId], references: [id])
+
+  @@index([dmId])
+  @@map("impact_analyses")
+}
+
+// ─── CRApproval ──────────────────────────────────────────────────────────────
+
+model CRApproval {
+  id              String   @id @default(cuid())
+  changeRequestId String   @unique
+  approvedById    String
+  approvalNotes   String?  @db.Text
+  poSignature     String   @db.Text    // Base64 encoded signature — mandatory
+  approvedAt      DateTime @default(now())
+
+  changeRequest   ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  approvedBy      User          @relation(fields: [approvedById], references: [id])
+
+  @@map("cr_approvals")
+}
+
+// ─── CRVersion (Immutable Snapshots) ─────────────────────────────────────────
+
+model CRVersion {
+  id              String   @id @default(cuid())
+  changeRequestId String
+  versionNumber   Int                  // v1, v2, v3...
+  snapshotJson    Json                 // Complete CR state at this point in time
+  createdById     String
+  createdAt       DateTime @default(now())
+
+  changeRequest   ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  createdBy       User          @relation(fields: [createdById], references: [id])
+
+  @@unique([changeRequestId, versionNumber])
+  @@index([changeRequestId])
+  @@map("cr_versions")
+}
+
+// ─── StatusHistory ───────────────────────────────────────────────────────────
+
+model StatusHistory {
+  id              String   @id @default(cuid())
+  changeRequestId String
+  fromStatus      CRStatus
+  toStatus        CRStatus
+  changedById     String
+  reason          String?  @db.Text    // Mandatory for Declined and Cancelled
+  changedAt       DateTime @default(now())
+
+  changeRequest   ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  changedBy       User          @relation(fields: [changedById], references: [id])
+
+  @@index([changeRequestId])
+  @@index([changedAt])
+  @@map("status_history")
+}
+
+// ─── InternalNote ────────────────────────────────────────────────────────────
+// Visible to DM and Super Admin only — never shown to PO or Finance.
+
+model InternalNote {
+  id              String   @id @default(cuid())
+  changeRequestId String
+  authorId        String
+  content         String   @db.Text
+  createdAt       DateTime @default(now())
+
+  changeRequest   ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  author          User          @relation(fields: [authorId], references: [id])
+
+  @@index([changeRequestId])
+  @@map("internal_notes")
+}
+
+// ─── AuditLog ────────────────────────────────────────────────────────────────
+// Insert-only (tamper-proof). Accessible to Super Admin only.
+// No onDelete cascade — audit logs survive entity deletion.
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  event      String              // e.g. "USER_LOGIN", "CR_SUBMITTED", "CR_STATUS_CHANGE"
+  actorId    String?             // Null for system-triggered events
+  entityType String              // e.g. "ChangeRequest", "User", "Project"
+  entityId   String              // ID of the affected entity
+  metadata   Json?               // Additional context (old/new values, filters, etc.)
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([event])
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
