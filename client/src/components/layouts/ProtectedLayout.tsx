@@ -23,15 +23,16 @@ interface ProtectedLayoutProps {
 export function ProtectedLayout({ children, allowedRoles }: ProtectedLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, token, clearAuth } = useAuthStore();
+  const { user, token, isHydrated, clearAuth } = useAuthStore();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Redirect to login if no session
+  // Redirect to login if no session (only after hydration)
   useEffect(() => {
+    if (!isHydrated) return;
     if (!token || !user) {
       router.replace('/login');
     }
-  }, [token, user, router]);
+  }, [isHydrated, token, user, router]);
 
   // Redirect to role home if accessing wrong route group
   useEffect(() => {
@@ -63,6 +64,7 @@ export function ProtectedLayout({ children, allowedRoles }: ProtectedLayoutProps
     };
   }, [clearAuth, router]);
 
+  if (!isHydrated) return null; // wait for localStorage to rehydrate
   if (!token || !user) return null;
   if (allowedRoles && !allowedRoles.includes(user.role)) return null;
 
