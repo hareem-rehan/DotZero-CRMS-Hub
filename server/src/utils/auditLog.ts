@@ -1,4 +1,5 @@
 import { prisma } from '../config/db';
+import { Prisma } from '@prisma/client';
 import { logger } from '../config/logger';
 
 interface AuditLogEntry {
@@ -19,7 +20,7 @@ export const createAuditLog = async (entry: AuditLogEntry): Promise<void> => {
         actorId: entry.actorId ?? null,
         entityType: entry.entityType,
         entityId: entry.entityId,
-        metadata: entry.metadata ?? null,
+        metadata: entry.metadata ? (entry.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
         ipAddress: entry.ipAddress ?? null,
         userAgent: entry.userAgent ?? null,
       },

@@ -5,6 +5,7 @@ import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { globalRateLimiter } from './middleware/rateLimiter';
 import { authRouter } from './modules/auth/auth.routes';
+import { projectsRouter } from './modules/projects/projects.routes';
 
 export const createApp = () => {
   const app = express();
@@ -34,8 +35,8 @@ export const createApp = () => {
 
   // Routes
   app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1/projects', projectsRouter);
   // app.use('/api/v1/users', userRoutes);
-  // app.use('/api/v1/projects', projectRoutes);
   // app.use('/api/v1/change-requests', changeRequestRoutes);
   // app.use('/api/v1/invitations', invitationRoutes);
   // app.use('/api/v1/dashboard', dashboardRoutes);
