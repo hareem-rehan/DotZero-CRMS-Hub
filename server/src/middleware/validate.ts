@@ -1,8 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema } from 'zod';
+
+interface SafeParseResult {
+  success: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: any;
+  error?: { flatten: () => { fieldErrors: Record<string, string[]> } };
+}
+
+interface ZodLike {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  safeParse(data: unknown): SafeParseResult;
+}
 
 export const validate =
-  (schema: ZodSchema, source: 'body' | 'params' | 'query' = 'body') =>
+  (schema: ZodLike, source: 'body' | 'params' | 'query' = 'body') =>
   (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req[source]);
     if (!result.success) {
@@ -10,7 +21,7 @@ export const validate =
         success: false,
         data: null,
         error: 'Validation failed',
-        meta: { issues: result.error.flatten().fieldErrors },
+        meta: { issues: result.error?.flatten().fieldErrors },
       });
       return;
     }

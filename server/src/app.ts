@@ -4,6 +4,7 @@ import cors from 'cors';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { globalRateLimiter } from './middleware/rateLimiter';
+import { authRouter } from './modules/auth/auth.routes';
 
 export const createApp = () => {
   const app = express();
@@ -31,8 +32,8 @@ export const createApp = () => {
     res.json({ success: true, data: { status: 'ok' }, error: null, meta: null });
   });
 
-  // Routes will be mounted here in subsequent phases
-  // app.use('/api/v1/auth', authRoutes);
+  // Routes
+  app.use('/api/v1/auth', authRouter);
   // app.use('/api/v1/users', userRoutes);
   // app.use('/api/v1/projects', projectRoutes);
   // app.use('/api/v1/change-requests', changeRequestRoutes);
