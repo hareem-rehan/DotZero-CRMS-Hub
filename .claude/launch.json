@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "cd client && /opt/homebrew/bin/node ./node_modules/.bin/next dev --port 3000"],
+      "port": 3000
+    },
+    {
+      "name": "server",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "cd server && /opt/homebrew/bin/node ./node_modules/.bin/ts-node -r tsconfig-paths/register src/server.ts"],
+      "port": 4000
+    }
+  ]
+}
