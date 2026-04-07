@@ -19,6 +19,8 @@ export const s3 = new S3Client({
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {
   'application/pdf': '.pdf',
+  'application/msword': '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
   'application/vnd.ms-excel': '.xls',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
   'image/png': '.png',
