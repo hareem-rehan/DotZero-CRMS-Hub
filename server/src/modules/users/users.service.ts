@@ -5,6 +5,7 @@ import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
 import { sendEmail } from '../../utils/email';
+import { welcomeEmail, passwordResetEmail } from '../../utils/emailTemplates';
 import type { CreateUserInput, UpdateUserInput } from './users.validation';
 
 const WELCOME_TOKEN_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
@@ -23,7 +24,12 @@ export const listUsers = async (query: {
   const skip = (page - 1) * pageSize;
 
   const where: Record<string, unknown> = {};
-  if (query.role) where.role = query.role;
+  // Default: exclude PRODUCT_OWNER (external clients) from the team list
+  if (query.role) {
+    where.role = query.role;
+  } else {
+    where.role = { not: 'PRODUCT_OWNER' };
+  }
   if (query.isActive !== undefined) where.isActive = query.isActive;
   if (query.search) {
     where.OR = [
@@ -98,7 +104,7 @@ export const createUser = async (input: CreateUserInput, actorId: string) => {
       email: input.email,
       passwordHash: tempHash,
       role: input.role,
-      isActive: true,
+      isActive: input.isActive ?? true,
       projectAssignments:
         input.projectIds.length > 0
           ? { create: input.projectIds.map((pid) => ({ projectId: pid })) }
@@ -131,14 +137,8 @@ export const createUser = async (input: CreateUserInput, actorId: string) => {
 
   const setupLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
 
-  await sendEmail(
-    user.email,
-    'Welcome to DotZero CR Portal — Set Your Password',
-    `<p>Hi ${user.name},</p>
-     <p>Your account has been created on the DotZero CR Portal. Please set your password by clicking the link below:</p>
-     <p><a href="${setupLink}">Set Password</a></p>
-     <p>This link expires in 48 hours. If you did not expect this email, please ignore it.</p>`,
-  );
+  const welcomeTpl = welcomeEmail(user.name, setupLink);
+  await sendEmail(user.email, welcomeTpl.subject, welcomeTpl.html);
 
   await createAuditLog({
     event: 'USER_CREATED',
@@ -239,14 +239,8 @@ export const resendWelcomeEmail = async (id: string, actorId: string) => {
 
   const setupLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
 
-  await sendEmail(
-    user.email,
-    'DotZero CR Portal — Password Setup Link',
-    `<p>Hi ${user.name},</p>
-     <p>Here is your password setup link:</p>
-     <p><a href="${setupLink}">Set Password</a></p>
-     <p>This link expires in 48 hours.</p>`,
-  );
+  const resendTpl = welcomeEmail(user.name, setupLink);
+  await sendEmail(user.email, resendTpl.subject, resendTpl.html);
 
   await createAuditLog({
     event: 'USER_WELCOME_RESENT',
@@ -256,6 +250,47 @@ export const resendWelcomeEmail = async (id: string, actorId: string) => {
   });
 
   return { message: 'Welcome email resent.' };
+};
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+export const deleteUser = async (id: string, actorId: string) => {
+  if (id === actorId) throw new AppError(400, 'You cannot delete your own account');
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new AppError(404, 'User not found');
+
+  // Clean up all related records in dependency order before deleting the user.
+  // Many FK columns are non-nullable with no onDelete cascade, so we must
+  // manually remove them first to avoid FK constraint violations.
+  await prisma.$transaction(async (tx) => {
+    // 1. Remove this user as author/actor on CR child records
+    await tx.internalNote.deleteMany({ where: { authorId: id } });
+    await tx.statusHistory.deleteMany({ where: { changedById: id } });
+    await tx.cRVersion.deleteMany({ where: { createdById: id } });
+    await tx.cRApproval.deleteMany({ where: { approvedById: id } });
+    await tx.impactAnalysis.deleteMany({ where: { dmId: id } });
+
+    // 2. Delete CRs submitted by this user (cascades CR attachments,
+    //    remaining impact analyses, approvals, versions, status history, notes)
+    await tx.changeRequest.deleteMany({ where: { submittedById: id } });
+
+    // 3. Delete invitations sent by this user
+    await tx.invitation.deleteMany({ where: { sentById: id } });
+
+    // 4. Finally delete the user (ProjectUser cascades automatically)
+    await tx.user.delete({ where: { id } });
+  });
+
+  await createAuditLog({
+    event: 'USER_DELETED',
+    actorId,
+    entityType: 'User',
+    entityId: id,
+    metadata: { name: user.name, email: user.email, role: user.role },
+  });
+
+  return { message: 'User deleted.' };
 };
 
 // ─── SA-triggered password reset ─────────────────────────────────────────────
@@ -280,14 +315,8 @@ export const adminResetPassword = async (id: string, actorId: string) => {
 
   const resetLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
 
-  await sendEmail(
-    user.email,
-    'DotZero CR Portal — Password Reset',
-    `<p>Hi ${user.name},</p>
-     <p>An administrator has triggered a password reset for your account:</p>
-     <p><a href="${resetLink}">Reset Password</a></p>
-     <p>This link expires in 1 hour.</p>`,
-  );
+  const resetTpl = passwordResetEmail(user.name, resetLink);
+  await sendEmail(user.email, resetTpl.subject, resetTpl.html);
 
   await createAuditLog({
     event: 'ADMIN_PASSWORD_RESET',

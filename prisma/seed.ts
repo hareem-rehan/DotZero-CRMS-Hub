@@ -11,9 +11,9 @@ async function main() {
   const [admin, dm, finance, po] = await Promise.all([
     prisma.user.upsert({
       where: { email: 'admin@dotzero.com' },
-      update: {},
+      update: { name: 'Alex Carter' },
       create: {
-        name: 'Super Admin',
+        name: 'Alex Carter',
         email: 'admin@dotzero.com',
         passwordHash: await bcrypt.hash('Admin@123', 12),
         role: Role.SUPER_ADMIN,
@@ -22,9 +22,9 @@ async function main() {
     }),
     prisma.user.upsert({
       where: { email: 'dm@dotzero.com' },
-      update: {},
+      update: { name: 'Sarah Mitchell' },
       create: {
-        name: 'Delivery Manager',
+        name: 'Sarah Mitchell',
         email: 'dm@dotzero.com',
         passwordHash: await bcrypt.hash('Dm@12345', 12),
         role: Role.DELIVERY_MANAGER,
@@ -33,9 +33,9 @@ async function main() {
     }),
     prisma.user.upsert({
       where: { email: 'finance@dotzero.com' },
-      update: {},
+      update: { name: 'James Liu' },
       create: {
-        name: 'Finance User',
+        name: 'James Liu',
         email: 'finance@dotzero.com',
         passwordHash: await bcrypt.hash('Finance@1', 12),
         role: Role.FINANCE,
@@ -44,9 +44,9 @@ async function main() {
     }),
     prisma.user.upsert({
       where: { email: 'po@dotzero.com' },
-      update: {},
+      update: { name: 'Priya Sharma' },
       create: {
-        name: 'Product Owner',
+        name: 'Priya Sharma',
         email: 'po@dotzero.com',
         passwordHash: await bcrypt.hash('Po@123456', 12),
         role: Role.PRODUCT_OWNER,

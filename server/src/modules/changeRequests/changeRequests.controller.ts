@@ -77,3 +77,76 @@ export const submit = async (req: Request, res: Response, next: NextFunction): P
     next(err);
   }
 };
+
+export const approve = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { poSignature, approvalNotes } = req.body;
+    const cr = await crService.approveCR(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+      poSignature,
+      approvalNotes,
+    );
+    res.json({ success: true, data: cr, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const decline = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { declineNotes } = req.body;
+    const cr = await crService.declineCR(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+      declineNotes,
+    );
+    res.json({ success: true, data: cr, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resubmit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const cr = await crService.resubmitCR(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+      req.body,
+    );
+    res.json({ success: true, data: cr, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const cancel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { reason } = req.body;
+    const cr = await crService.cancelCR(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+      reason,
+    );
+    res.json({ success: true, data: cr, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const versions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const result = await crService.getCRVersions(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+    );
+    res.json({ success: true, data: result, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};

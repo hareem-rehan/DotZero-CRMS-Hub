@@ -116,9 +116,11 @@ model Project {
   currency      Currency      @default(USD)
   status        ProjectStatus @default(ACTIVE)
   startDate     DateTime?
-  showRateToDm  Boolean       @default(false)  // Controls whether DM can see hourly rate
-  sowReference  String?                         // Default SOW ref for CRs in this project
-  crSequence    Int           @default(0)       // Auto-increment counter for CR numbering
+  showRateToDm        Boolean  @default(false)  // Controls whether DM can see hourly rate
+  sowReference        String?                   // Default SOW ref for CRs in this project
+  clientEmail         String?                   // Primary contact email for the client
+  clientMemberEmails  Json     @default("[]")   // External client emails notified on CR submit
+  crSequence          Int      @default(0)      // Auto-increment counter for CR numbering
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -207,6 +209,7 @@ model ChangeRequest {
   version               Int        @default(1)
   sowRef                String?               // Auto-populated from project
   dateOfRequest         DateTime?             // Set on first submission, not draft creation
+  lastReminderSentAt    DateTime?             // Tracks 48hr reminder — prevents duplicate sends
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
 

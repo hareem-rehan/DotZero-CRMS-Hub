@@ -3,8 +3,10 @@ import { z } from 'zod';
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
-  SENDGRID_API_KEY: z.string().min(1),
-  EMAIL_FROM: z.string().email(),
+  SENDGRID_API_KEY: z.string().default(''),
+  EMAIL_FROM: z.string().email().default('noreply@dotzero.com'),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASS: z.string().optional().default(''),
   PORT: z.string().default('4000'),
   CLIENT_URL: z.string().url(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

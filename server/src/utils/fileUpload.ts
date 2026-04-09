@@ -3,7 +3,11 @@ import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Request } from 'express';
 import path from 'path';
+import fs from 'fs';
 import { env } from '../config/env';
+
+// Local uploads directory (used when S3 is not configured)
+export const LOCAL_UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 
 // ─── S3 Client ───────────────────────────────────────────────────────────────
 
@@ -60,6 +64,20 @@ export const uploadToS3 = async (
   const ext = path.extname(file.originalname) || ALLOWED_MIME_TYPES[file.mimetype] || '';
   const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
   const bucket = env.S3_BUCKET ?? 'dotzero-crms';
+
+  // In development without AWS credentials, save to local filesystem
+  if (!env.S3_ACCESS_KEY) {
+    const localDir = path.join(LOCAL_UPLOADS_DIR, path.dirname(key));
+    fs.mkdirSync(localDir, { recursive: true });
+    fs.writeFileSync(path.join(LOCAL_UPLOADS_DIR, key), file.buffer);
+    return {
+      key,
+      url: `http://localhost:${env.PORT ?? 4000}/uploads/${key}`,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    };
+  }
 
   const uploader = new Upload({
     client: s3,

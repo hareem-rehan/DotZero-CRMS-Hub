@@ -4,14 +4,17 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { MultiSelect } from '@/components/ui/MultiSelect';
-import { useProjects } from '@/hooks/useProjects';
+import { RoleBadge } from '@/components/ui/Badge';
 
 const ROLE_OPTIONS = [
   { value: 'SUPER_ADMIN', label: 'Super Admin' },
-  { value: 'PRODUCT_OWNER', label: 'Product Owner' },
   { value: 'DELIVERY_MANAGER', label: 'Delivery Manager' },
   { value: 'FINANCE', label: 'Finance' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Inactive' },
 ];
 
 export interface UserFormValues {
@@ -19,6 +22,7 @@ export interface UserFormValues {
   email: string;
   role: string;
   projectIds: string[];
+  isActive?: boolean;
 }
 
 interface UserFormProps {
@@ -30,25 +34,20 @@ interface UserFormProps {
 }
 
 export function UserForm({ defaultValues, isEdit, loading, onSubmit, onCancel }: UserFormProps) {
-  const { data: projectsData } = useProjects({ status: 'ACTIVE' });
-  const projectOptions = (projectsData?.projects ?? []).map((p) => ({
-    value: p.id,
-    label: `${p.name} (${p.code})`,
-  }));
-
   const [values, setValues] = useState<UserFormValues>({
     name: defaultValues?.name ?? '',
     email: defaultValues?.email ?? '',
-    role: defaultValues?.role ?? 'PRODUCT_OWNER',
-    projectIds: defaultValues?.projectIds ?? [],
+    role: defaultValues?.role ?? 'DELIVERY_MANAGER',
+    projectIds: [],
+    isActive: defaultValues?.isActive ?? true,
   });
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormValues, string>>>({});
 
-  const set = (field: keyof UserFormValues, value: string | string[]) =>
+  const set = (field: keyof UserFormValues, value: string | boolean) =>
     setValues((prev) => ({ ...prev, [field]: value }));
 
   const validate = () => {
-    const errs: typeof errors = {};
+    const errs: Partial<Record<keyof UserFormValues, string>> = {};
     if (!values.name.trim()) errs.name = 'Name is required';
     if (!values.email.trim()) errs.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errs.email = 'Invalid email';
@@ -77,29 +76,43 @@ export function UserForm({ defaultValues, isEdit, loading, onSubmit, onCancel }:
         value={values.email}
         onChange={(e) => set('email', e.target.value)}
         error={errors.email}
-        placeholder="jane@example.com"
-        disabled={isEdit} // Email is read-only on edit
+        placeholder="jane@dotzero.com"
+        disabled={isEdit}
       />
       {isEdit && (
         <p className="text-xs text-[#5D5B5B] -mt-3">Email cannot be changed after creation.</p>
       )}
-      <Select
-        label="Role *"
-        value={values.role}
-        onChange={(e) => set('role', e.target.value)}
-        options={ROLE_OPTIONS}
-      />
-      <MultiSelect
-        label="Assign to Projects"
-        options={projectOptions}
-        value={values.projectIds}
-        onChange={(ids) => set('projectIds', ids)}
-        placeholder="Select projects…"
-      />
+
+      {/* Role — dropdown on create, read-only badge on edit */}
+      <div>
+        <label className="block text-sm font-medium text-[#2D2D2D] mb-1">Role</label>
+        {isEdit ? (
+          <div className="flex items-center gap-2 rounded-lg border border-[#D3D3D3] bg-[#F7F7F7] px-3 py-2">
+            <RoleBadge role={values.role} />
+            <span className="text-xs text-[#5D5B5B] ml-1">Role cannot be changed after creation.</span>
+          </div>
+        ) : (
+          <Select
+            value={values.role}
+            onChange={(e) => set('role', e.target.value)}
+            options={ROLE_OPTIONS}
+          />
+        )}
+      </div>
+
+      {/* Status */}
+      <div>
+        <label className="block text-sm font-medium text-[#2D2D2D] mb-1">Status</label>
+        <Select
+          value={values.isActive ? 'true' : 'false'}
+          onChange={(e) => set('isActive', e.target.value === 'true')}
+          options={STATUS_OPTIONS}
+        />
+        <p className="mt-1 text-xs text-[#5D5B5B]">Inactive users cannot log in.</p>
+      </div>
+
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
-          Cancel
-        </Button>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>
           {isEdit ? 'Save Changes' : 'Create User'}
         </Button>

@@ -204,6 +204,93 @@ export const authService = {
     return { message: 'Password reset successfully.' };
   },
 
+  async getMe(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError(404, 'User not found');
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  },
+
+  async updateMe(userId: string, input: { name?: string; phone?: string; timezone?: string; notifyOnCrSubmitted?: boolean; notifyOnCrReturned?: boolean; notifyOnCrApproved?: boolean; notifyOnCrDeclined?: boolean }) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: input,
+    });
+    await createAuditLog({ event: 'USER_UPDATED', actorId: userId, entityType: 'User', entityId: userId, metadata: { fields: Object.keys(input) } });
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  },
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError(404, 'User not found');
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) throw new AppError(400, 'Current password is incorrect');
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash, passwordSetAt: new Date() } });
+    await createAuditLog({ event: 'PASSWORD_RESET', actorId: userId, entityType: 'User', entityId: userId, metadata: { source: 'self' } });
+    return { message: 'Password changed successfully.' };
+  },
+
+  async getStats() {
+    const [users, projects, changeRequests, pendingCRs] = await Promise.all([
+      prisma.user.count(),
+      prisma.project.count(),
+      prisma.changeRequest.count(),
+      prisma.changeRequest.count({ where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'RESUBMITTED'] } } }),
+    ]);
+    return { users, projects, changeRequests, pendingCRs };
+  },
+
+  async magicLogin(token: string) {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const tokenRecord = await prisma.auditLog.findFirst({
+      where: {
+        event: 'CLIENT_LOGIN_TOKEN',
+        metadata: { path: ['tokenHash'], equals: tokenHash },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!tokenRecord) throw new AppError(400, 'Invalid or expired login link');
+
+    const metadata = tokenRecord.metadata as { tokenHash: string; expiresAt: string; usedAt?: string };
+    if (metadata.usedAt) throw new AppError(400, 'This login link has already been used');
+    if (new Date(metadata.expiresAt) < new Date()) throw new AppError(400, 'Login link has expired');
+
+    const user = await prisma.user.findUnique({ where: { id: tokenRecord.entityId } });
+    if (!user || !user.isActive) throw new AppError(400, 'Invalid login link');
+
+    // Mark token as used
+    await prisma.auditLog.update({
+      where: { id: tokenRecord.id },
+      data: { metadata: { ...metadata, usedAt: new Date().toISOString() } },
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
+    await createAuditLog({
+      event: 'USER_LOGIN',
+      actorId: user.id,
+      entityType: 'User',
+      entityId: user.id,
+      metadata: { source: 'magic_link' },
+    });
+
+    const jwtToken = jwt.sign(
+      { userId: user.id, role: user.role, email: user.email },
+      env.JWT_SECRET,
+      { expiresIn: '8h' } as jwt.SignOptions,
+    );
+
+    const { passwordHash: _, ...safeUser } = user;
+    return { token: jwtToken, user: safeUser };
+  },
+
   async register(input: RegisterInput, ipAddress?: string) {
     // Find invite by token
     const invite = await prisma.invitation.findUnique({ where: { token: input.token } });

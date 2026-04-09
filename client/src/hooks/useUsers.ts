@@ -62,7 +62,7 @@ export const useCreateUser = () => {
       name: string;
       email: string;
       role: string;
-      projectIds: string[];
+      projectIds?: string[];
     }) => {
       const { data } = await apiClient.post<{ success: boolean; data: User }>('/users', payload);
       return data.data;
@@ -100,7 +100,7 @@ export const useSetUserActive = () => {
   });
 };
 
-export const useResendWelcome = () => {
+export const useResendWelcome = (callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -109,11 +109,12 @@ export const useResendWelcome = () => {
       );
       return data.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); callbacks?.onSuccess?.(); },
+    onError: () => callbacks?.onError?.(),
   });
 };
 
-export const useAdminResetPassword = () => {
+export const useAdminResetPassword = (callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data } = await apiClient.post<{ success: boolean; data: { message: string } }>(
@@ -121,6 +122,22 @@ export const useAdminResetPassword = () => {
       );
       return data.data;
     },
+    onSuccess: () => callbacks?.onSuccess?.(),
+    onError: () => callbacks?.onError?.(),
+  });
+};
+
+export const useDeleteUser = (callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete<{ success: boolean; data: { message: string } }>(
+        `/users/${id}`,
+      );
+      return data.data;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); callbacks?.onSuccess?.(); },
+    onError: () => callbacks?.onError?.(),
   });
 };
 

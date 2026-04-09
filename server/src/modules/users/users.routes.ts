@@ -32,3 +32,6 @@ usersRouter.post('/:id/resend-invite', ctrl.resendWelcome);
 
 // POST /api/v1/users/:id/reset-password
 usersRouter.post('/:id/reset-password', ctrl.resetPassword);
+
+// DELETE /api/v1/users/:id
+usersRouter.delete('/:id', ctrl.deleteUser);

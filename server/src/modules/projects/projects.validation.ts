@@ -1,5 +1,27 @@
 import { z } from 'zod';
 
+// Coerce strings from multipart/form-data to proper types
+const coercedNumber = z.preprocess(
+  (v) => (v === '' || v === undefined || v === null ? undefined : Number(v)),
+  z.number({ invalid_type_error: 'Hourly rate must be a number' }).positive('Hourly rate must be positive'),
+);
+
+const coercedBoolean = z.preprocess(
+  (v) => v === 'true' || v === true,
+  z.boolean(),
+);
+
+const coercedEmailArray = z.preprocess(
+  (v) => {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') {
+      try { return JSON.parse(v); } catch { return []; }
+    }
+    return [];
+  },
+  z.array(z.string().email('Invalid email address')).default([]),
+);
+
 export const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(255),
   clientName: z.string().min(1, 'Client name is required').max(255),
@@ -9,23 +31,31 @@ export const createProjectSchema = z.object({
     .max(20)
     .regex(/^[A-Z0-9_-]+$/, 'Code must be uppercase letters, numbers, underscores or hyphens')
     .optional(),
-  hourlyRate: z
-    .number({ invalid_type_error: 'Hourly rate must be a number' })
-    .positive('Hourly rate must be positive'),
+  hourlyRate: coercedNumber,
   currency: z.enum(['USD', 'EUR', 'GBP', 'AED', 'PKR', 'SAR']).default('USD'),
   startDate: z.string().datetime().optional().nullable(),
   assignedDmId: z.string().cuid().optional().nullable(),
-  showRateToDm: z.boolean().default(false),
-  sowReference: z.string().max(255).optional().nullable(),
+  showRateToDm: coercedBoolean.default(false),
   status: z.enum(['ACTIVE', 'ON_HOLD', 'DELIVERED']).default('ACTIVE'),
+  clientEmail: z.string().email('Invalid client email').optional().nullable(),
+  clientMemberEmails: coercedEmailArray,
 });
 
 export const updateProjectSchema = createProjectSchema
-  .omit({ code: true }) // code is immutable after creation
+  .omit({ code: true })
   .extend({
     status: z.enum(['ACTIVE', 'ON_HOLD', 'DELIVERED', 'ARCHIVED']).optional(),
   })
   .partial();
 
+export const listProjectsSchema = z.object({
+  status: z.string().optional(),
+  search: z.string().optional(),
+  clientName: z.string().optional(),
+  page: z.preprocess((v) => (v ? Number(v) : 1), z.number().int().min(1)).optional(),
+  pageSize: z.preprocess((v) => (v ? Number(v) : 20), z.number().int().min(1).max(100)).optional(),
+});
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type ListProjectsQuery = z.infer<typeof listProjectsSchema>;

@@ -2,13 +2,14 @@ import { ButtonHTMLAttributes } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
-  variant?: 'primary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost';
 }
 
 export function Button({ loading, variant = 'primary', className = '', children, disabled, ...props }: ButtonProps) {
   const base = 'inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   const variants = {
     primary: 'bg-[#EF323F] text-white hover:bg-[#d62d39] focus:ring-[#EF323F]',
+    secondary: 'bg-white border border-[#D3D3D3] text-[#2D2D2D] hover:bg-gray-50 focus:ring-[#D3D3D3]',
     ghost: 'bg-transparent text-[#2D2D2D] hover:bg-[#F7F7F7] focus:ring-[#D3D3D3]',
   };
 

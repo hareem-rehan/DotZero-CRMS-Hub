@@ -102,6 +102,22 @@ export const resendWelcome = async (
   }
 };
 
+export const deleteUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const result = await usersService.deleteUser(
+      req.params['id'] as string,
+      req.user?.userId as string,
+    );
+    res.json({ success: true, data: result, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const resetPassword = async (
   req: Request,
   res: Response,

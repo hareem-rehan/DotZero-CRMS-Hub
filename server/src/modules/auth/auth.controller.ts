@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service';
 import { sendEmail } from '../../utils/email';
+import { passwordResetEmail } from '../../utils/emailTemplates';
 import { env } from '../../config/env';
 
 export const authController = {
@@ -24,27 +25,8 @@ export const authController = {
       // Send reset email if a token was generated
       if (result.resetToken && result.email) {
         const resetUrl = `${env.CLIENT_URL}/reset-password?token=${result.resetToken}`;
-        await sendEmail(
-          result.email,
-          'Reset your DotZero password',
-          `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-              <div style="background:#EF323F;padding:20px;text-align:center">
-                <h1 style="color:#fff;margin:0">DotZero CR Portal</h1>
-              </div>
-              <div style="padding:30px;background:#fff">
-                <p>Hi ${result.name ?? 'there'},</p>
-                <p>You requested a password reset. This link expires in <strong>1 hour</strong>.</p>
-                <div style="text-align:center;margin:30px 0">
-                  <a href="${resetUrl}" style="background:#EF323F;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold">
-                    Reset Password
-                  </a>
-                </div>
-                <p style="color:#5D5B5B;font-size:13px">If you didn't request this, ignore this email.</p>
-              </div>
-            </div>
-          `,
-        );
+        const tpl = passwordResetEmail(result.name ?? 'there', resetUrl);
+        await sendEmail(result.email, tpl.subject, tpl.html);
       }
 
       res.json({ success: true, data: { message: result.message }, error: null, meta: null });
@@ -62,10 +44,62 @@ export const authController = {
     }
   },
 
+  async magicLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        res.status(400).json({ success: false, data: null, error: 'Token is required', meta: null });
+        return;
+      }
+      const result = await authService.magicLogin(token);
+      res.json({ success: true, data: result, error: null, meta: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async register(req: Request, res: Response, next: NextFunction) {
     try {
       const user = await authService.register(req.body, req.ip);
       res.status(201).json({ success: true, data: user, error: null, meta: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await authService.getMe(req.user!.userId);
+      res.json({ success: true, data: user, error: null, meta: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { name, phone, timezone, notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined } = req.body;
+      const user = await authService.updateMe(req.user!.userId, { name, phone, timezone, notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined });
+      res.json({ success: true, data: user, error: null, meta: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const result = await authService.changePassword(req.user!.userId, currentPassword, newPassword);
+      res.json({ success: true, data: result, error: null, meta: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.getStats();
+      res.json({ success: true, data: result, error: null, meta: null });
     } catch (err) {
       next(err);
     }

@@ -40,6 +40,40 @@ export function ProjectStatusBadge({ status }: { status: string }) {
   return <Badge label={config.label} variant={config.variant} />;
 }
 
+// ─── CR status badge ──────────────────────────────────────────────────────────
+
+const CR_STATUS_MAP: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
+  DRAFT: { label: 'Draft', variant: 'gray' },
+  SUBMITTED: { label: 'Submitted', variant: 'blue' },
+  UNDER_REVIEW: { label: 'Under Review', variant: 'yellow' },
+  ESTIMATED: { label: 'Estimated', variant: 'orange' },
+  RESUBMITTED: { label: 'Resubmitted', variant: 'blue' },
+  APPROVED: { label: 'Approved', variant: 'green' },
+  DECLINED: { label: 'Declined', variant: 'red' },
+  IN_PROGRESS: { label: 'In Progress', variant: 'purple' },
+  COMPLETED: { label: 'Completed', variant: 'green' },
+  CANCELLED: { label: 'Cancelled', variant: 'gray' },
+};
+
+export function CRStatusBadge({ status }: { status: string }) {
+  const config = CR_STATUS_MAP[status] ?? { label: status, variant: 'gray' as const };
+  return <Badge label={config.label} variant={config.variant} />;
+}
+
+// ─── CR priority badge ────────────────────────────────────────────────────────
+
+const CR_PRIORITY_MAP: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
+  LOW: { label: 'Low', variant: 'gray' },
+  MEDIUM: { label: 'Medium', variant: 'blue' },
+  HIGH: { label: 'High', variant: 'orange' },
+  CRITICAL: { label: 'Critical', variant: 'red' },
+};
+
+export function CRPriorityBadge({ priority }: { priority: string }) {
+  const config = CR_PRIORITY_MAP[priority] ?? { label: priority, variant: 'gray' as const };
+  return <Badge label={config.label} variant={config.variant} />;
+}
+
 // ─── Role badge ───────────────────────────────────────────────────────────────
 
 const ROLE_MAP: Record<string, { label: string; variant: BadgeProps['variant'] }> = {

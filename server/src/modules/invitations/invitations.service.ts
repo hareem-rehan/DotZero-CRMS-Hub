@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
 import { sendEmail } from '../../utils/email';
+import { inviteEmail } from '../../utils/emailTemplates';
 import type { CreateInvitationInput } from './invitations.validation';
 
 const INVITE_TOKEN_EXPIRY_MS = 72 * 60 * 60 * 1000; // 72 hours
@@ -44,14 +45,8 @@ export const sendInvitation = async (input: CreateInvitationInput, actorId: stri
 
   const registerLink = `${env.CLIENT_URL}/register?token=${rawToken}`;
 
-  await sendEmail(
-    input.email,
-    `You're invited to the DotZero CR Portal — ${project.name}`,
-    `<p>You have been invited to access the DotZero CR Portal for project <strong>${project.name}</strong>.</p>
-     <p>Click the link below to create your account:</p>
-     <p><a href="${registerLink}">Accept Invitation</a></p>
-     <p>This invitation expires in 72 hours.</p>`,
-  );
+  const tpl = inviteEmail(input.email, registerLink, project.name);
+  await sendEmail(input.email, tpl.subject, tpl.html);
 
   await createAuditLog({
     event: 'INVITATION_SENT',
@@ -64,6 +59,34 @@ export const sendInvitation = async (input: CreateInvitationInput, actorId: stri
   return { message: 'Invitation sent successfully.', invitationId: invitation.id };
 };
 
+/**
+ * Send a PRODUCT_OWNER invitation silently — skips if:
+ * - active invitation already exists for this email + project
+ * - user already exists and is already assigned to the project
+ */
+export const sendInvitationIfNotExists = async (
+  email: string,
+  projectId: string,
+  actorId: string,
+): Promise<void> => {
+  // Skip if active invitation already pending
+  const existingInvite = await prisma.invitation.findFirst({
+    where: { email, projectId, usedAt: null, expiresAt: { gt: new Date() } },
+  });
+  if (existingInvite) return;
+
+  // Skip if user already exists and is assigned to this project
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    const assignment = await prisma.projectUser.findUnique({
+      where: { projectId_userId: { projectId, userId: existingUser.id } },
+    });
+    if (assignment) return;
+  }
+
+  await sendInvitation({ email, projectId, role: 'PRODUCT_OWNER' }, actorId);
+};
+
 export const listInvitations = async (projectId?: string) => {
   return prisma.invitation.findMany({
     where: projectId ? { projectId } : undefined,
@@ -73,4 +96,36 @@ export const listInvitations = async (projectId?: string) => {
       sentBy: { select: { id: true, name: true } },
     },
   });
+};
+
+export const resendInvitation = async (id: string, actorId: string) => {
+  const invitation = await prisma.invitation.findUnique({
+    where: { id },
+    include: { project: { select: { name: true } } },
+  });
+  if (!invitation) throw new AppError(404, 'Invitation not found');
+  if (invitation.usedAt) throw new AppError(400, 'This invitation has already been used');
+
+  // Regenerate token + extend expiry
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + INVITE_TOKEN_EXPIRY_MS);
+
+  await prisma.invitation.update({
+    where: { id },
+    data: { token: rawToken, expiresAt },
+  });
+
+  const registerLink = `${env.CLIENT_URL}/register?token=${rawToken}`;
+  const tpl = inviteEmail(invitation.email, registerLink, invitation.project.name);
+  await sendEmail(invitation.email, tpl.subject, tpl.html);
+
+  await createAuditLog({
+    event: 'INVITATION_RESENT',
+    actorId,
+    entityType: 'Invitation',
+    entityId: id,
+    metadata: { email: invitation.email },
+  });
+
+  return { message: 'Invitation resent.', token: rawToken };
 };

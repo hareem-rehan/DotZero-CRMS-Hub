@@ -19,13 +19,12 @@ const ROLE_OPTIONS = [
 ];
 
 export function InviteModal({ open, onClose }: InviteModalProps) {
-  const { data: projectsData } = useProjects({ status: 'ACTIVE' });
+  const { data: projectsData } = useProjects({ pageSize: 100 });
   const projectOptions = [
     { value: '', label: 'Select a project…' },
-    ...(projectsData?.projects ?? []).map((p) => ({
-      value: p.id,
-      label: `${p.name} (${p.code})`,
-    })),
+    ...(projectsData?.projects ?? [])
+      .filter((p) => p.status !== 'ARCHIVED')
+      .map((p) => ({ value: p.id, label: `${p.name} (${p.code})` })),
   ];
 
   const [email, setEmail] = useState('');

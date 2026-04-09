@@ -3,7 +3,30 @@ import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
 import { uploadToS3 } from '../../utils/fileUpload';
 import { sendEmail } from '../../utils/email';
+import {
+  crSubmittedEmail,
+  crApprovedEmail,
+  crDeclinedEmail,
+  crResubmittedEmail,
+  statusChangedEmail,
+} from '../../utils/emailTemplates';
 import { ALLOWED_TRANSITIONS } from './changeRequests.validation';
+
+// ─── Notify user respecting their preferences ─────────────────────────────────
+const notifyIfAllowed = async (
+  userId: string,
+  prefKey: 'notifyOnCrSubmitted' | 'notifyOnCrReturned' | 'notifyOnCrApproved' | 'notifyOnCrDeclined',
+  subject: string,
+  html: string,
+) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, notifyOnCrSubmitted: true, notifyOnCrReturned: true, notifyOnCrApproved: true, notifyOnCrDeclined: true },
+  });
+  if (!user) return;
+  if (!user[prefKey]) return; // preference is off
+  await sendEmail(user.email, subject, html);
+};
 import type { CreateCRInput, UpdateCRInput } from './changeRequests.validation';
 
 // ─── CR number generation ─────────────────────────────────────────────────────
@@ -130,6 +153,28 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
   // Scope checks
   if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) {
     throw new AppError(403, 'Access denied');
+  }
+
+  // Auto-transition SUBMITTED → UNDER_REVIEW when DM first opens the CR
+  if (actorRole === 'DELIVERY_MANAGER' && cr.status === 'SUBMITTED') {
+    await prisma.$transaction([
+      prisma.changeRequest.update({ where: { id }, data: { status: 'UNDER_REVIEW' } }),
+      prisma.statusHistory.create({
+        data: {
+          changeRequestId: id,
+          fromStatus: 'SUBMITTED',
+          toStatus: 'UNDER_REVIEW',
+          changedById: actorId,
+        },
+      }),
+    ]);
+    await createAuditLog({
+      event: 'CR_UNDER_REVIEW',
+      actorId,
+      entityType: 'ChangeRequest',
+      entityId: id,
+    });
+    cr.status = 'UNDER_REVIEW';
   }
 
   // Strip financial data from DM responses
@@ -269,6 +314,281 @@ export const updateCR = async (
   return updated;
 };
 
+// ─── Approve ──────────────────────────────────────────────────────────────────
+
+export const approveCR = async (
+  id: string,
+  actorId: string,
+  actorRole: string,
+  poSignature: string,
+  approvalNotes?: string,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      project: { select: { name: true, hourlyRate: true, assignedDmId: true } },
+      impactAnalysis: { select: { estimatedHours: true } },
+      submittedBy: { select: { id: true } },
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'APPROVED');
+  if (!poSignature?.trim()) throw new AppError(400, 'PO signature is required to approve');
+
+  // Compute totalCost (stored for SA/Finance) = estimatedHours × hourlyRate
+  const totalCost = cr.impactAnalysis
+    ? Number(cr.impactAnalysis.estimatedHours) * Number(cr.project.hourlyRate)
+    : null;
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({
+      where: { id },
+      data: { status: 'APPROVED' },
+    }),
+    prisma.cRApproval.create({
+      data: {
+        changeRequestId: id,
+        approvedById: actorId,
+        poSignature,
+        approvalNotes: approvalNotes ?? null,
+      },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status as never,
+        toStatus: 'APPROVED',
+        changedById: actorId,
+        reason: approvalNotes ?? null,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_APPROVED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber, totalCost },
+  });
+
+  // Email DM
+  if (cr.project.assignedDmId) {
+    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true, notifyOnCrApproved: true } });
+    if (dm?.notifyOnCrApproved) {
+      const tpl = crApprovedEmail(dm.name, cr.crNumber, cr.project.name, approvalNotes);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id }, include: { approval: true } });
+};
+
+// ─── Decline ──────────────────────────────────────────────────────────────────
+
+export const declineCR = async (
+  id: string,
+  actorId: string,
+  actorRole: string,
+  declineNotes: string,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true, assignedDmId: true } }, submittedBy: { select: { id: true } } },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'DECLINED');
+  if (!declineNotes?.trim()) throw new AppError(400, 'Decline notes are required');
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: { status: 'DECLINED' } }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status as never,
+        toStatus: 'DECLINED',
+        changedById: actorId,
+        reason: declineNotes,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_DECLINED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
+
+  // Email DM with reason
+  if (cr.project.assignedDmId) {
+    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true, notifyOnCrDeclined: true } });
+    if (dm?.notifyOnCrDeclined) {
+      const tpl = crDeclinedEmail(dm.name, cr.crNumber, cr.project.name, declineNotes);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── Resubmit ─────────────────────────────────────────────────────────────────
+
+export const resubmitCR = async (
+  id: string,
+  actorId: string,
+  actorRole: string,
+  input: UpdateCRInput,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      project: { select: { name: true, assignedDmId: true } },
+      submittedBy: { select: { id: true } },
+      impactAnalysis: true,
+      attachments: true,
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'RESUBMITTED');
+
+  const newVersion = cr.version + 1;
+
+  // Snapshot the current CR state before editing
+  const snapshot = {
+    version: cr.version,
+    title: cr.title,
+    description: cr.description,
+    businessJustification: cr.businessJustification,
+    priority: cr.priority,
+    changeType: cr.changeType,
+    requestingParty: cr.requestingParty,
+    sowRef: cr.sowRef,
+    status: cr.status,
+    impactAnalysis: cr.impactAnalysis,
+    attachments: cr.attachments,
+    snapshotAt: new Date().toISOString(),
+  };
+
+  await prisma.$transaction([
+    prisma.cRVersion.create({
+      data: {
+        changeRequestId: id,
+        versionNumber: cr.version,
+        snapshotJson: snapshot,
+        createdById: actorId,
+      },
+    }),
+    prisma.changeRequest.update({
+      where: { id },
+      data: {
+        status: 'RESUBMITTED',
+        version: newVersion,
+        dateOfRequest: new Date(),
+        ...(input.title !== undefined && { title: input.title }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.businessJustification !== undefined && { businessJustification: input.businessJustification }),
+        ...(input.priority !== undefined && { priority: input.priority }),
+        ...(input.changeType !== undefined && { changeType: input.changeType }),
+        ...(input.requestingParty !== undefined && { requestingParty: input.requestingParty }),
+        ...(input.sowRef !== undefined && { sowRef: input.sowRef }),
+      },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status as never,
+        toStatus: 'RESUBMITTED',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_RESUBMITTED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber, newVersion },
+  });
+
+  // Email DM
+  if (cr.project.assignedDmId) {
+    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true, notifyOnCrSubmitted: true } });
+    if (dm?.notifyOnCrSubmitted) {
+      const tpl = crResubmittedEmail(dm.name, cr.crNumber, cr.project.name, newVersion, id);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── Cancel ───────────────────────────────────────────────────────────────────
+
+export const cancelCR = async (id: string, actorId: string, actorRole: string, reason?: string) => {
+  const cr = await prisma.changeRequest.findUnique({ where: { id } });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'CANCELLED');
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: { status: 'CANCELLED' } }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status as never,
+        toStatus: 'CANCELLED',
+        changedById: actorId,
+        reason: reason ?? null,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_CANCELLED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── Versions ─────────────────────────────────────────────────────────────────
+
+export const getCRVersions = async (id: string, actorId: string, actorRole: string) => {
+  const cr = await prisma.changeRequest.findUnique({ where: { id } });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+
+  return prisma.cRVersion.findMany({
+    where: { changeRequestId: id },
+    orderBy: { versionNumber: 'asc' },
+    include: { createdBy: { select: { id: true, name: true } } },
+  });
+};
+
+// ─── Internal notes ───────────────────────────────────────────────────────────
+
+export const addInternalNote = async (crId: string, actorId: string, actorRole: string, content: string) => {
+  const cr = await prisma.changeRequest.findUnique({ where: { id: crId } });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!['DELIVERY_MANAGER', 'SUPER_ADMIN'].includes(actorRole)) throw new AppError(403, 'Access denied');
+  if (!content?.trim()) throw new AppError(400, 'Note content is required');
+
+  const note = await prisma.internalNote.create({
+    data: { changeRequestId: crId, authorId: actorId, content: content.trim() },
+    include: { author: { select: { id: true, name: true } } },
+  });
+  return note;
+};
+
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
 export const submitCR = async (id: string, actorId: string) => {
@@ -316,18 +636,19 @@ export const submitCR = async (id: string, actorId: string) => {
 
   // Email assigned DM
   if (cr.project.assignedDmId) {
-    const dm = await prisma.user.findUnique({
-      where: { id: cr.project.assignedDmId },
-      select: { email: true, name: true },
-    });
+    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true } });
     if (dm) {
-      await sendEmail(
-        dm.email,
-        `New Change Request Submitted — ${cr.crNumber}`,
-        `<p>Hi ${dm.name},</p>
-         <p>A new change request <strong>${cr.crNumber}</strong> has been submitted for project <strong>${cr.project.name}</strong>.</p>
-         <p>Please log in to the DotZero CR Portal to review and estimate.</p>`,
-      );
+      const tpl = crSubmittedEmail(dm.name, cr.crNumber, cr.project.name, id);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
+  // Trigger #8 — notify PO of status change
+  {
+    const po = await prisma.user.findUnique({ where: { id: cr.submittedById }, select: { id: true, name: true, notifyOnCrSubmitted: true } });
+    if (po?.notifyOnCrSubmitted) {
+      const tpl = statusChangedEmail(po.name, cr.crNumber, cr.project.name, 'SUBMITTED', id, 'PRODUCT_OWNER');
+      await sendEmail((await prisma.user.findUnique({ where: { id: po.id }, select: { email: true } }))!.email, tpl.subject, tpl.html).catch(() => {});
     }
   }
 

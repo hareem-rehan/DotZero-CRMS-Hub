@@ -14,3 +14,6 @@ invitationsRouter.post('/', validate(createInvitationSchema), ctrl.send);
 
 // GET /api/v1/invitations — list all invitations (optional ?projectId=)
 invitationsRouter.get('/', ctrl.list);
+
+// POST /api/v1/invitations/:id/resend — regenerate token + resend email
+invitationsRouter.post('/:id/resend', ctrl.resend);

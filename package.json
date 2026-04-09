@@ -29,7 +29,8 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.2.5",
     "prisma": "^5.22.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "xlsx": "^0.18.5"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

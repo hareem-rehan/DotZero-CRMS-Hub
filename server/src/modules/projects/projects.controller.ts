@@ -3,14 +3,28 @@ import * as projectsService from './projects.service';
 
 export const list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { status, search, page, pageSize } = req.query;
+    const { status, search, clientName, page, pageSize } = req.query;
     const result = await projectsService.listProjects({
       status: status as string | undefined,
       search: search as string | undefined,
+      clientName: clientName as string | undefined,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
     });
     res.json({ success: true, data: result, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const clientNames = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const names = await projectsService.getClientNames();
+    res.json({ success: true, data: names, error: null, meta: null });
   } catch (err) {
     next(err);
   }
@@ -79,6 +93,27 @@ export const unarchive = async (
       req.user?.userId as string,
     );
     res.json({ success: true, data: project, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const clientLoginLink = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const links = await projectsService.generateClientLoginLinks(
+      req.params['id'] as string,
+      req.user?.userId as string,
+    );
+    res.json({ success: true, data: links, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const myProjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const projects = await projectsService.getMyProjects(req.user!.userId);
+    res.json({ success: true, data: projects, error: null, meta: null });
   } catch (err) {
     next(err);
   }

@@ -1,15 +1,44 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
 import { ProjectStatusBadge, RoleBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useProject } from '@/hooks/useProjects';
+import { apiClient } from '@/lib/apiClient';
+
+interface ClientLink {
+  userId: string;
+  name: string;
+  email: string;
+  link: string;
+  expiresAt: string;
+}
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: project, isLoading, isError } = useProject(id);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [generatedLinks, setGeneratedLinks] = useState<ClientLink[] | null>(null);
+
+  const generateLinkMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<{ success: boolean; data: ClientLink[] }>(
+        `/projects/${id}/client-login-link`,
+      );
+      return data.data;
+    },
+    onSuccess: (links) => setGeneratedLinks(links),
+  });
+
+  const copyLink = (link: string, index: number) => {
+    navigator.clipboard.writeText(link);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
 
   if (isLoading) {
     return (
@@ -34,9 +63,21 @@ export default function ProjectDetailPage() {
     <PageWrapper
       title={project.name}
       actions={
-        <Link href={`/admin/projects/${id}/edit`}>
-          <Button>Edit Project</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => generateLinkMutation.mutate()}
+            loading={generateLinkMutation.isPending}
+          >
+            <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            Generate Client Link
+          </Button>
+          <Link href={`/admin/projects/${id}/edit`}>
+            <Button>Edit Project</Button>
+          </Link>
+        </div>
       }
     >
       <div className="space-y-6">
@@ -59,6 +100,45 @@ export default function ProjectDetailPage() {
             <InfoRow label="SOW Reference" value={project.sowReference ?? '—'} />
           </div>
         </div>
+
+        {/* Error */}
+        {generateLinkMutation.isError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {(generateLinkMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to generate login link'}
+          </div>
+        )}
+
+        {/* Generated client login links */}
+        {generatedLinks && generatedLinks.length > 0 && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm font-medium text-green-800">
+                Login link{generatedLinks.length > 1 ? 's' : ''} generated — valid for 24 hours
+              </p>
+            </div>
+            {generatedLinks.map((item, i) => (
+              <div key={item.userId} className="rounded-lg border border-green-200 bg-white p-3 space-y-2">
+                <p className="text-xs font-medium text-[#2D2D2D]">
+                  {item.name} <span className="font-normal text-[#5D5B5B]">({item.email})</span>
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded bg-[#F7F7F7] px-2 py-1.5 text-xs text-[#2D2D2D] border border-[#E5E5E5]">
+                    {item.link}
+                  </code>
+                  <button
+                    onClick={() => copyLink(item.link, i)}
+                    className="shrink-0 rounded-lg border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs font-medium hover:bg-[#F7F7F7] transition-colors"
+                  >
+                    {copiedIndex === i ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Approved CR totals */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

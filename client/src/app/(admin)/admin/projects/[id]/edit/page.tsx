@@ -40,14 +40,15 @@ export default function EditProjectPage() {
           defaultValues={{
             name: project.name,
             clientName: project.clientName,
+            clientEmail: project.clientEmail ?? '',
             code: project.code,
             hourlyRate: String(project.hourlyRate),
             currency: project.currency,
             startDate: project.startDate ? project.startDate.slice(0, 10) : '',
             assignedDmId: project.assignedDmId ?? '',
             showRateToDm: project.showRateToDm,
-            sowReference: project.sowReference ?? '',
             status: project.status,
+            clientMemberEmails: project.clientMemberEmails ?? [],
           }}
           loading={updateMutation.isPending}
           onSubmit={handleSubmit}

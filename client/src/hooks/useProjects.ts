@@ -7,6 +7,7 @@ export interface Project {
   id: string;
   name: string;
   clientName: string;
+  clientEmail: string | null;
   code: string;
   hourlyRate: string;
   currency: string;
@@ -23,6 +24,7 @@ export interface Project {
 }
 
 export interface ProjectDetail extends Project {
+  clientMemberEmails: string[];
   userAssignments: Array<{
     user: { id: string; name: string; email: string; role: string; isActive: boolean };
   }>;
@@ -54,7 +56,7 @@ export interface DmUser {
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-export const useProjects = (params?: { status?: string; search?: string; page?: number }) => {
+export const useProjects = (params?: { status?: string; search?: string; clientName?: string; page?: number; pageSize?: number }) => {
   return useQuery({
     queryKey: ['projects', params],
     queryFn: async () => {
@@ -80,12 +82,45 @@ export const useProject = (id: string) => {
   });
 };
 
+export interface MyProject {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+  currency: string;
+  attachments: Array<{ id: string; fileName: string; fileUrl: string; fileSize: number; mimeType: string }>;
+}
+
+export const useMyProjects = () => {
+  return useQuery({
+    queryKey: ['my-projects'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ success: boolean; data: MyProject[] }>(
+        '/projects/my-projects',
+      );
+      return data.data;
+    },
+  });
+};
+
 export const useDmUsers = () => {
   return useQuery({
     queryKey: ['projects', 'dm-users'],
     queryFn: async () => {
       const { data } = await apiClient.get<{ success: boolean; data: DmUser[] }>(
         '/projects/dm-users',
+      );
+      return data.data;
+    },
+  });
+};
+
+export const useClientNames = () => {
+  return useQuery({
+    queryKey: ['projects', 'client-names'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ success: boolean; data: string[] }>(
+        '/projects/client-names',
       );
       return data.data;
     },

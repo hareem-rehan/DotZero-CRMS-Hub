@@ -3,13 +3,14 @@
 import { useRouter, useParams } from 'next/navigation';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
 import { UserForm, UserFormValues } from '@/components/users/UserForm';
-import { useUser, useUpdateUser } from '@/hooks/useUsers';
+import { useUser, useUpdateUser, useSetUserActive } from '@/hooks/useUsers';
 
 export default function EditUserPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: user, isLoading } = useUser(id);
   const updateMutation = useUpdateUser(id);
+  const setActiveMutation = useSetUserActive();
 
   if (isLoading) {
     return (
@@ -28,13 +29,21 @@ export default function EditUserPage() {
   }
 
   const handleSubmit = async (values: UserFormValues) => {
+    // Update name + projects
     await updateMutation.mutateAsync({
       name: values.name,
       role: values.role,
       projectIds: values.projectIds,
     });
+    // Update active status if changed
+    if (values.isActive !== undefined && values.isActive !== user.isActive) {
+      await setActiveMutation.mutateAsync({ id, active: values.isActive });
+    }
     router.push('/admin/users');
   };
+
+  const isPending = updateMutation.isPending || setActiveMutation.isPending;
+  const error = updateMutation.error || setActiveMutation.error;
 
   return (
     <PageWrapper title={`Edit — ${user.name}`}>
@@ -46,15 +55,15 @@ export default function EditUserPage() {
             email: user.email,
             role: user.role,
             projectIds: user.projectAssignments?.map((pa) => pa.project.id) ?? [],
+            isActive: user.isActive,
           }}
-          loading={updateMutation.isPending}
+          loading={isPending}
           onSubmit={handleSubmit}
           onCancel={() => router.push('/admin/users')}
         />
-        {updateMutation.isError && (
+        {error && (
           <p className="mt-3 text-sm text-red-600">
-            {(updateMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-              'Failed to update user'}
+            {(error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to update user'}
           </p>
         )}
       </div>

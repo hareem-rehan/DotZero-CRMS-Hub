@@ -10,7 +10,7 @@
     {
       "name": "server",
       "runtimeExecutable": "/bin/bash",
-      "runtimeArgs": ["-c", "cd server && /opt/homebrew/bin/node ./node_modules/.bin/ts-node -r tsconfig-paths/register src/server.ts"],
+      "runtimeArgs": ["-c", "export DATABASE_URL='postgresql://dotzero:dotzero@localhost:5432/dotzero_crms' JWT_SECRET='dotzero_dev_secret_key_replace_in_production_min32' SENDGRID_API_KEY='' EMAIL_FROM='hareem.rehan@nextgeni.com' SMTP_USER='hareem.rehan@nextgeni.com' SMTP_PASS='ofzl lwvc iwfv fzcf' CLIENT_URL='http://localhost:3000' NODE_ENV='development' PORT='4000' S3_BUCKET='dotzero-cr-attachments' S3_REGION='us-east-1' && cd '/Users/hareemrehan/Downloads/05_DotZero_Project/CRMHUB Specs/Final/dotzero-cr-portal/server' && /opt/homebrew/bin/node ./node_modules/.bin/ts-node -r tsconfig-paths/register src/server.ts"],
       "port": 4000
     }
   ]

@@ -23,13 +23,15 @@ export function Navbar() {
   return (
     <header className="flex h-14 items-center justify-between border-b border-[#D3D3D3] bg-white px-6">
       <div />
-      <div className="flex items-center gap-4">
-        {roleInfo && (
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${roleInfo.color}`}>
-            {roleInfo.label}
-          </span>
-        )}
-        <span className="text-sm font-medium text-[#2D2D2D]">{user?.name}</span>
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end leading-tight">
+          <span className="text-sm font-semibold text-[#2D2D2D]">{user?.name}</span>
+          {roleInfo && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleInfo.color}`}>
+              {roleInfo.label}
+            </span>
+          )}
+        </div>
         <button
           onClick={handleLogout}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-[#5D5B5B] hover:bg-[#F7F7F7] hover:text-[#2D2D2D] transition-colors"
