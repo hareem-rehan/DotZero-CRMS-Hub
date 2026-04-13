@@ -42,7 +42,10 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: async (payload: LoginPayload) => {
       const res = await apiClient.post('/auth/login', payload);
-      return res.data.data as { token: string; user: { id: string; name: string; email: string; role: string } };
+      return res.data.data as {
+        token: string;
+        user: { id: string; name: string; email: string; role: string };
+      };
     },
     onSuccess: (data) => {
       setAuth(data.user, data.token);

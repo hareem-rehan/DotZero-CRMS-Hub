@@ -14,7 +14,11 @@ import { CRSummary } from '@/hooks/useCRs';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 const CR_STATUS_OPTIONS = [
@@ -31,11 +35,25 @@ const CR_STATUS_OPTIONS = [
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
-function StatCard({ label, value, sub, accent }: { label: string; value: React.ReactNode; sub?: React.ReactNode; accent?: boolean }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+  accent?: boolean;
+}) {
   return (
-    <div className={`rounded-xl border p-5 shadow-sm ${accent ? 'border-[#EF323F]/20 bg-[#FFF5F5]' : 'border-[#E5E5E5] bg-white'}`}>
+    <div
+      className={`rounded-xl border p-5 shadow-sm ${accent ? 'border-[#EF323F]/20 bg-[#FFF5F5]' : 'border-[#E5E5E5] bg-white'}`}
+    >
       <p className="text-xs text-[#5D5B5B] uppercase tracking-wide">{label}</p>
-      <p className={`mt-1 text-3xl font-bold ${accent ? 'text-[#EF323F]' : 'text-[#2D2D2D]'}`}>{value}</p>
+      <p className={`mt-1 text-3xl font-bold ${accent ? 'text-[#EF323F]' : 'text-[#2D2D2D]'}`}>
+        {value}
+      </p>
       {sub && <p className="mt-1 text-xs text-[#5D5B5B]">{sub}</p>}
     </div>
   );
@@ -64,7 +82,11 @@ export default function AdminDashboardPage() {
 
   const { data: projectsData } = useProjects({ pageSize: 100 });
 
-  const { data: crData, isLoading: crLoading } = useQuery<{ crs: CRSummary[]; total: number; totalPages: number }>({
+  const { data: crData, isLoading: crLoading } = useQuery<{
+    crs: CRSummary[];
+    total: number;
+    totalPages: number;
+  }>({
     queryKey: ['admin-crs', crProjectId, crStatus, crClient, crDateFrom, crDateTo, crPage],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(crPage), pageSize: '15' });
@@ -78,9 +100,15 @@ export default function AdminDashboardPage() {
   });
 
   const costChange = sa?.costChangePercent;
-  const costChip = costChange !== null && costChange !== undefined
-    ? <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${costChange >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{costChange >= 0 ? '+' : ''}{costChange}% vs last month</span>
-    : null;
+  const costChip =
+    costChange !== null && costChange !== undefined ? (
+      <span
+        className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${costChange >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+      >
+        {costChange >= 0 ? '+' : ''}
+        {costChange}% vs last month
+      </span>
+    ) : null;
 
   return (
     <PageWrapper title="Dashboard">
@@ -88,14 +116,25 @@ export default function AdminDashboardPage() {
         <div className="flex h-40 items-center justify-center text-sm text-[#5D5B5B]">Loading…</div>
       ) : (
         <div className="space-y-6">
-
           {/* Summary cards */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <StatCard label="Active Projects" value={sa?.activeProjects ?? 0} />
             <StatCard label="CRs This Month" value={sa?.thisMonthCRs ?? 0} />
-            <StatCard label="Approved Cost" value={<>{fmt(sa?.thisMonthCost ?? 0)}{costChip}</>} accent />
-            <StatCard label="Pending Actions" value={sa?.pendingActions?.length ?? 0}
-              sub={sa?.pendingActions?.length ? 'CRs stuck > 48h' : 'All caught up'} />
+            <StatCard
+              label="Approved Cost"
+              value={
+                <>
+                  {fmt(sa?.thisMonthCost ?? 0)}
+                  {costChip}
+                </>
+              }
+              accent
+            />
+            <StatCard
+              label="Pending Actions"
+              value={sa?.pendingActions?.length ?? 0}
+              sub={sa?.pendingActions?.length ? 'CRs stuck > 48h' : 'All caught up'}
+            />
           </div>
 
           {/* Users by role */}
@@ -103,7 +142,10 @@ export default function AdminDashboardPage() {
             <h2 className="mb-4 text-base font-semibold text-[#2D2D2D]">Active Users by Role</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {(sa?.usersByRole ?? []).map((r) => (
-                <div key={r.role} className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-center">
+                <div
+                  key={r.role}
+                  className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-center"
+                >
                   <p className="text-2xl font-bold text-[#2D2D2D]">{r.count}</p>
                   <p className="mt-1 text-xs text-[#5D5B5B]">{ROLE_LABELS[r.role] ?? r.role}</p>
                 </div>
@@ -120,55 +162,130 @@ export default function AdminDashboardPage() {
 
             {/* CR Filters */}
             <div className="flex flex-wrap gap-3 px-6 py-3 border-b border-[#E5E5E5] bg-[#FAFAFA]">
-              <select value={crProjectId} onChange={(e) => { setCrProjectId(e.target.value); setCrPage(1); }}
-                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]">
+              <select
+                value={crProjectId}
+                onChange={(e) => {
+                  setCrProjectId(e.target.value);
+                  setCrPage(1);
+                }}
+                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              >
                 <option value="">All Projects</option>
-                {(projectsData?.projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {(projectsData?.projects ?? []).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
               </select>
-              <select value={crStatus} onChange={(e) => { setCrStatus(e.target.value); setCrPage(1); }}
-                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]">
-                {CR_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <select
+                value={crStatus}
+                onChange={(e) => {
+                  setCrStatus(e.target.value);
+                  setCrPage(1);
+                }}
+                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              >
+                {CR_STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
-              <input type="text" placeholder="Client name…" value={crClient}
-                onChange={(e) => { setCrClient(e.target.value); setCrPage(1); }}
-                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-36" />
-              <input type="date" value={crDateFrom} onChange={(e) => { setCrDateFrom(e.target.value); setCrPage(1); }}
-                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]" />
-              <input type="date" value={crDateTo} onChange={(e) => { setCrDateTo(e.target.value); setCrPage(1); }}
-                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]" />
+              <input
+                type="text"
+                placeholder="Client name…"
+                value={crClient}
+                onChange={(e) => {
+                  setCrClient(e.target.value);
+                  setCrPage(1);
+                }}
+                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-36"
+              />
+              <input
+                type="date"
+                value={crDateFrom}
+                onChange={(e) => {
+                  setCrDateFrom(e.target.value);
+                  setCrPage(1);
+                }}
+                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+              <input
+                type="date"
+                value={crDateTo}
+                onChange={(e) => {
+                  setCrDateTo(e.target.value);
+                  setCrPage(1);
+                }}
+                className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] bg-[#F7F7F7]">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">CR #</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">Title</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">Project</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">Submitted By</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">
+                      CR #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">
+                      Title
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">
+                      Project
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">
+                      Submitted By
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide">
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {crLoading ? (
-                    <tr><td colSpan={6} className="px-4 py-6 text-center text-sm text-[#5D5B5B]">Loading…</td></tr>
-                  ) : (crData?.crs ?? []).length === 0 ? (
-                    <tr><td colSpan={6} className="px-4 py-6 text-center text-sm text-[#5D5B5B]">No change requests found.</td></tr>
-                  ) : (crData?.crs ?? []).map((cr) => (
-                    <tr key={cr.id} className="border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]">
-                      <td className="px-4 py-3">
-                        <Link href={`/admin/change-requests/${cr.id}`} className="font-mono text-xs font-semibold text-[#EF323F] hover:underline">{cr.crNumber}</Link>
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-[#5D5B5B]">
+                        Loading…
                       </td>
-                      <td className="px-4 py-3 font-medium text-[#2D2D2D] max-w-[200px] truncate">{cr.title}</td>
-                      <td className="px-4 py-3 text-[#5D5B5B]">{cr.project.name}</td>
-                      <td className="px-4 py-3 text-[#5D5B5B]">{cr.submittedBy.name}</td>
-                      <td className="px-4 py-3 text-[#5D5B5B]">
-                        {cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}
-                      </td>
-                      <td className="px-4 py-3"><CRStatusBadge status={cr.status} /></td>
                     </tr>
-                  ))}
+                  ) : (crData?.crs ?? []).length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-[#5D5B5B]">
+                        No change requests found.
+                      </td>
+                    </tr>
+                  ) : (
+                    (crData?.crs ?? []).map((cr) => (
+                      <tr
+                        key={cr.id}
+                        className="border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]"
+                      >
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/admin/change-requests/${cr.id}`}
+                            className="font-mono text-xs font-semibold text-[#EF323F] hover:underline"
+                          >
+                            {cr.crNumber}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-[#2D2D2D] max-w-[200px] truncate">
+                          {cr.title}
+                        </td>
+                        <td className="px-4 py-3 text-[#5D5B5B]">{cr.project.name}</td>
+                        <td className="px-4 py-3 text-[#5D5B5B]">{cr.submittedBy.name}</td>
+                        <td className="px-4 py-3 text-[#5D5B5B]">
+                          {cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <CRStatusBadge status={cr.status} />
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -176,10 +293,24 @@ export default function AdminDashboardPage() {
             {/* CR Pagination */}
             {(crData?.totalPages ?? 0) > 1 && (
               <div className="flex items-center justify-between border-t border-[#E5E5E5] px-6 py-3 text-sm text-[#5D5B5B]">
-                <span>Page {crPage} of {crData?.totalPages}</span>
+                <span>
+                  Page {crPage} of {crData?.totalPages}
+                </span>
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => setCrPage((p) => Math.max(1, p - 1))} disabled={crPage === 1}>Previous</Button>
-                  <Button variant="secondary" onClick={() => setCrPage((p) => Math.min(crData!.totalPages, p + 1))} disabled={crPage === crData?.totalPages}>Next</Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setCrPage((p) => Math.max(1, p - 1))}
+                    disabled={crPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setCrPage((p) => Math.min(crData!.totalPages, p + 1))}
+                    disabled={crPage === crData?.totalPages}
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
             )}
@@ -188,7 +319,9 @@ export default function AdminDashboardPage() {
           {/* Pending actions alert */}
           {(sa?.pendingActions?.length ?? 0) > 0 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-              <h2 className="mb-4 text-base font-semibold text-amber-900">CRs Awaiting DM Review (&gt;48h)</h2>
+              <h2 className="mb-4 text-base font-semibold text-amber-900">
+                CRs Awaiting DM Review (&gt;48h)
+              </h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -203,12 +336,18 @@ export default function AdminDashboardPage() {
                   <tbody className="divide-y divide-amber-100">
                     {sa!.pendingActions.map((cr) => (
                       <tr key={cr.id}>
-                        <td className="py-2 pr-4 font-mono font-semibold text-[#EF323F]">{cr.crNumber}</td>
+                        <td className="py-2 pr-4 font-mono font-semibold text-[#EF323F]">
+                          {cr.crNumber}
+                        </td>
                         <td className="py-2 pr-4 text-amber-900">{cr.projectName}</td>
                         <td className="py-2 pr-4 text-amber-800">{cr.submittedBy}</td>
-                        <td className="py-2 pr-4 text-amber-700">{cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}</td>
+                        <td className="py-2 pr-4 text-amber-700">
+                          {cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}
+                        </td>
                         <td className="py-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${(cr.hoursStuck ?? 0) >= 120 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${(cr.hoursStuck ?? 0) >= 120 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}
+                          >
                             {cr.hoursStuck}h
                           </span>
                         </td>
@@ -219,7 +358,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
-
         </div>
       )}
     </PageWrapper>

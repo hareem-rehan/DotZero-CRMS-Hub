@@ -109,12 +109,18 @@ export const useResendWelcome = (callbacks?: { onSuccess?: () => void; onError?:
       );
       return data.data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); callbacks?.onSuccess?.(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      callbacks?.onSuccess?.();
+    },
     onError: () => callbacks?.onError?.(),
   });
 };
 
-export const useAdminResetPassword = (callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+export const useAdminResetPassword = (callbacks?: {
+  onSuccess?: () => void;
+  onError?: () => void;
+}) => {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data } = await apiClient.post<{ success: boolean; data: { message: string } }>(
@@ -136,7 +142,10 @@ export const useDeleteUser = (callbacks?: { onSuccess?: () => void; onError?: ()
       );
       return data.data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); callbacks?.onSuccess?.(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      callbacks?.onSuccess?.();
+    },
     onError: () => callbacks?.onError?.(),
   });
 };

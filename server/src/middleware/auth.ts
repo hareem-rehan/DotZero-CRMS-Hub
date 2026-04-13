@@ -8,11 +8,9 @@ export interface JwtPayload {
   email: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: JwtPayload;
   }
 }
 
@@ -21,7 +19,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    res.status(401).json({ success: false, data: null, error: 'Access token required', meta: null });
+    res
+      .status(401)
+      .json({ success: false, data: null, error: 'Access token required', meta: null });
     return;
   }
 
@@ -30,6 +30,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     req.user = decoded;
     next();
   } catch {
-    res.status(401).json({ success: false, data: null, error: 'Invalid or expired token', meta: null });
+    res
+      .status(401)
+      .json({ success: false, data: null, error: 'Invalid or expired token', meta: null });
   }
 };

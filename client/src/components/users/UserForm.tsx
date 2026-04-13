@@ -89,7 +89,9 @@ export function UserForm({ defaultValues, isEdit, loading, onSubmit, onCancel }:
         {isEdit ? (
           <div className="flex items-center gap-2 rounded-lg border border-[#D3D3D3] bg-[#F7F7F7] px-3 py-2">
             <RoleBadge role={values.role} />
-            <span className="text-xs text-[#5D5B5B] ml-1">Role cannot be changed after creation.</span>
+            <span className="text-xs text-[#5D5B5B] ml-1">
+              Role cannot be changed after creation.
+            </span>
           </div>
         ) : (
           <Select
@@ -112,7 +114,9 @@ export function UserForm({ defaultValues, isEdit, loading, onSubmit, onCancel }:
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>Cancel</Button>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+          Cancel
+        </Button>
         <Button type="submit" loading={loading}>
           {isEdit ? 'Save Changes' : 'Create User'}
         </Button>

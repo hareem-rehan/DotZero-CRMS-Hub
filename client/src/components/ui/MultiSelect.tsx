@@ -93,8 +93,19 @@ export function MultiSelect({
                         className={`inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${selected ? 'border-[#EF323F] bg-[#EF323F]' : 'border-[#D3D3D3]'}`}
                       >
                         {selected && (
-                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 12 12">
-                            <path d="M10 3L5 8.5 2 5.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          <svg
+                            className="h-3 w-3 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 12 12"
+                          >
+                            <path
+                              d="M10 3L5 8.5 2 5.5"
+                              stroke="white"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              fill="none"
+                            />
                           </svg>
                         )}
                       </span>

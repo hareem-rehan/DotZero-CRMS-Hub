@@ -22,7 +22,7 @@ export interface CRSummary {
   changeType: string;
   dateOfRequest: string | null;
   updatedAt: string;
-  project: { id: string; name: string; code: string };
+  project: { id: string; name: string; code: string; hourlyRate?: string | number; currency?: string };
   submittedBy: { id: string; name: string };
   _count: { attachments: number };
 }
@@ -46,6 +46,7 @@ export interface CRDetail extends CRSummary {
     recommendation: string | null;
     isDraft: boolean;
     totalCost?: number;
+    dm?: { id: string; name: string } | null;
   } | null;
   approval: {
     id: string;
@@ -202,7 +203,10 @@ export const useSubmitCR = () => {
 
 // ─── PO: Approve / Decline / Resubmit / Cancel ───────────────────────────────
 
-export const useApproveCR = (crId: string, callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useApproveCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { poSignature: string; approvalNotes?: string }) => {
@@ -215,13 +219,18 @@ export const useApproveCR = (crId: string, callbacks?: { onSuccess?: () => void;
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to approve';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to approve';
       callbacks?.onError?.(msg);
     },
   });
 };
 
-export const useDeclineCR = (crId: string, callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useDeclineCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (declineNotes: string) => {
@@ -234,16 +243,27 @@ export const useDeclineCR = (crId: string, callbacks?: { onSuccess?: () => void;
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to decline';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to decline';
       callbacks?.onError?.(msg);
     },
   });
 };
 
-export const useResubmitCR = (crId: string, callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useResubmitCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { title?: string; description?: string; businessJustification?: string; priority?: string; changeType?: string }) => {
+    mutationFn: async (payload: {
+      title?: string;
+      description?: string;
+      businessJustification?: string;
+      priority?: string;
+      changeType?: string;
+    }) => {
       const { data } = await apiClient.post(`/change-requests/${crId}/resubmit`, payload);
       return data.data;
     },
@@ -253,13 +273,18 @@ export const useResubmitCR = (crId: string, callbacks?: { onSuccess?: () => void
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to resubmit';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to resubmit';
       callbacks?.onError?.(msg);
     },
   });
 };
 
-export const useCancelCR = (crId: string, callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useCancelCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (reason?: string) => {
@@ -272,7 +297,9 @@ export const useCancelCR = (crId: string, callbacks?: { onSuccess?: () => void; 
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to cancel';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to cancel';
       callbacks?.onError?.(msg);
     },
   });
@@ -283,7 +310,13 @@ export const useCRVersions = (crId: string) =>
     queryKey: ['change-requests', crId, 'versions'],
     queryFn: async () => {
       const { data } = await apiClient.get(`/change-requests/${crId}/versions`);
-      return data.data as Array<{ id: string; versionNumber: number; snapshotJson: unknown; createdAt: string; createdBy: { id: string; name: string } }>;
+      return data.data as Array<{
+        id: string;
+        versionNumber: number;
+        snapshotJson: unknown;
+        createdAt: string;
+        createdBy: { id: string; name: string };
+      }>;
     },
     enabled: !!crId,
   });
@@ -301,7 +334,10 @@ export interface ImpactAnalysisPayload {
   isDraft: boolean;
 }
 
-export const useSaveImpactAnalysis = (crId: string, callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useSaveImpactAnalysis = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: ImpactAnalysisPayload) => {
@@ -314,13 +350,18 @@ export const useSaveImpactAnalysis = (crId: string, callbacks?: { onSuccess?: ()
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save estimation';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to save estimation';
       callbacks?.onError?.(msg);
     },
   });
 };
 
-export const useAddNote = (crId: string, callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useAddNote = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (content: string) => {
@@ -332,7 +373,9 @@ export const useAddNote = (crId: string, callbacks?: { onSuccess?: () => void; o
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to add note';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to add note';
       callbacks?.onError?.(msg);
     },
   });

@@ -11,9 +11,7 @@ export function PageWrapper({ title, children, actions }: PageWrapperProps) {
         <h1 className="text-lg font-semibold text-[#2D2D2D]">{title}</h1>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
-      <div className="flex-1 overflow-auto p-6 bg-[#F7F7F7]">
-        {children}
-      </div>
+      <div className="flex-1 overflow-auto p-6 bg-[#F7F7F7]">{children}</div>
     </div>
   );
 }

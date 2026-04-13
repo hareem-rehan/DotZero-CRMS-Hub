@@ -37,11 +37,7 @@ changeRequestsRouter.patch(
 );
 
 // POST /api/v1/change-requests/:id/submit — submit draft (PO only)
-changeRequestsRouter.post(
-  '/:id/submit',
-  roleGuard(['PRODUCT_OWNER']),
-  ctrl.submit,
-);
+changeRequestsRouter.post('/:id/submit', roleGuard(['PRODUCT_OWNER']), ctrl.submit);
 
 // POST /api/v1/change-requests/:id/impact-analysis — save/submit estimation (DM + SA)
 changeRequestsRouter.post(
@@ -79,14 +75,7 @@ changeRequestsRouter.post(
 );
 
 // PATCH /api/v1/change-requests/:id/status — cancel only (PO or SA)
-changeRequestsRouter.patch(
-  '/:id/status',
-  roleGuard(['PRODUCT_OWNER', 'SUPER_ADMIN']),
-  ctrl.cancel,
-);
+changeRequestsRouter.patch('/:id/status', roleGuard(['PRODUCT_OWNER', 'SUPER_ADMIN']), ctrl.cancel);
 
 // GET /api/v1/change-requests/:id/versions — version history
-changeRequestsRouter.get(
-  '/:id/versions',
-  ctrl.versions,
-);
+changeRequestsRouter.get('/:id/versions', ctrl.versions);

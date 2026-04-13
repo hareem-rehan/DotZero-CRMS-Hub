@@ -56,7 +56,13 @@ export interface DmUser {
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-export const useProjects = (params?: { status?: string; search?: string; clientName?: string; page?: number; pageSize?: number }) => {
+export const useProjects = (params?: {
+  status?: string;
+  search?: string;
+  clientName?: string;
+  page?: number;
+  pageSize?: number;
+}) => {
   return useQuery({
     queryKey: ['projects', params],
     queryFn: async () => {
@@ -88,7 +94,13 @@ export interface MyProject {
   code: string;
   status: string;
   currency: string;
-  attachments: Array<{ id: string; fileName: string; fileUrl: string; fileSize: number; mimeType: string }>;
+  attachments: Array<{
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileSize: number;
+    mimeType: string;
+  }>;
 }
 
 export const useMyProjects = () => {
@@ -133,9 +145,13 @@ export const useCreateProject = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (formData: FormData) => {
-      const { data } = await apiClient.post<{ success: boolean; data: Project }>('/projects', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await apiClient.post<{ success: boolean; data: Project }>(
+        '/projects',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
       return data.data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),

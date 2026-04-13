@@ -43,7 +43,13 @@ interface ProjectFormProps {
   onCancel: () => void;
 }
 
-export function ProjectForm({ defaultValues, isEdit, loading, onSubmit, onCancel }: ProjectFormProps) {
+export function ProjectForm({
+  defaultValues,
+  isEdit,
+  loading,
+  onSubmit,
+  onCancel,
+}: ProjectFormProps) {
   const { data: dmUsers = [] } = useDmUsers();
 
   const [values, setValues] = useState<ProjectFormValues>({
@@ -100,7 +106,10 @@ export function ProjectForm({ defaultValues, isEdit, loading, onSubmit, onCancel
   };
 
   const removeEmail = (email: string) => {
-    set('clientMemberEmails', values.clientMemberEmails.filter((e) => e !== email));
+    set(
+      'clientMemberEmails',
+      values.clientMemberEmails.filter((e) => e !== email),
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -130,12 +139,14 @@ export function ProjectForm({ defaultValues, isEdit, loading, onSubmit, onCancel
 
   const dmOptions = [
     { value: '', label: 'None' },
-    ...dmUsers.map((u) => ({ value: u.id, label: `${u.name} (${u.role === 'SUPER_ADMIN' ? 'SA' : 'DM'})` })),
+    ...dmUsers.map((u) => ({
+      value: u.id,
+      label: `${u.name} (${u.role === 'SUPER_ADMIN' ? 'SA' : 'DM'})`,
+    })),
   ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-
       {/* Row 1: Project Name | Project Code (new only) */}
       {!isEdit ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -202,7 +213,9 @@ export function ProjectForm({ defaultValues, isEdit, loading, onSubmit, onCancel
             error={errors.clientEmail}
             placeholder="e.g. jane@acmecorp.com"
           />
-          <p className="mt-1 text-xs text-[#5D5B5B]">An invitation link will be sent to this email automatically.</p>
+          <p className="mt-1 text-xs text-[#5D5B5B]">
+            An invitation link will be sent to this email automatically.
+          </p>
         </div>
       </div>
 
@@ -245,14 +258,24 @@ export function ProjectForm({ defaultValues, isEdit, loading, onSubmit, onCancel
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-[#2D2D2D]">
           Client Team Members
-          <span className="ml-1 font-normal text-[#5D5B5B]">— receive CR notifications via email</span>
+          <span className="ml-1 font-normal text-[#5D5B5B]">
+            — receive CR notifications via email
+          </span>
         </label>
         <div className="flex gap-2">
           <input
             type="email"
             value={emailInput}
-            onChange={(e) => { setEmailInput(e.target.value); setEmailError(''); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEmail(); } }}
+            onChange={(e) => {
+              setEmailInput(e.target.value);
+              setEmailError('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addEmail();
+              }
+            }}
             placeholder="client@company.com"
             className="flex-1 rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
           />
@@ -285,7 +308,10 @@ export function ProjectForm({ defaultValues, isEdit, loading, onSubmit, onCancel
       {/* File attachments */}
       <div>
         <p className="mb-1 text-sm font-medium text-[#2D2D2D]">
-          Attachments <span className="text-[#5D5B5B] font-normal">(PDF, XLS, PNG, JPEG — max 5 files, 10 MB each)</span>
+          Attachments{' '}
+          <span className="text-[#5D5B5B] font-normal">
+            (PDF, XLS, PNG, JPEG — max 5 files, 10 MB each)
+          </span>
         </p>
         <div
           className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D3D3D3] p-6 text-sm text-[#5D5B5B] hover:border-[#EF323F] transition-colors"

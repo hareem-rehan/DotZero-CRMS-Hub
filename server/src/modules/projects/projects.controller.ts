@@ -82,11 +82,7 @@ export const archive = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
-export const unarchive = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const unarchive = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const project = await projectsService.unarchiveProject(
       req.params['id'] as string,
@@ -98,7 +94,11 @@ export const unarchive = async (
   }
 };
 
-export const clientLoginLink = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const clientLoginLink = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const links = await projectsService.generateClientLoginLinks(
       req.params['id'] as string,
@@ -110,7 +110,11 @@ export const clientLoginLink = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const myProjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const myProjects = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const projects = await projectsService.getMyProjects(req.user!.userId);
     res.json({ success: true, data: projects, error: null, meta: null });

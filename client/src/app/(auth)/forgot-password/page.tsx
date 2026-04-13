@@ -13,7 +13,11 @@ interface ForgotForm {
 export default function ForgotPasswordPage() {
   const { mutate: forgotPassword, isPending, isSuccess } = useForgotPassword();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ForgotForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ForgotForm>();
 
   const onSubmit = (data: ForgotForm) => forgotPassword(data);
 
@@ -21,13 +25,19 @@ export default function ForgotPasswordPage() {
     return (
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
-          <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-6 w-6 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <h1 className="text-xl font-bold text-[#2D2D2D] mb-2">Check your email</h1>
         <p className="text-sm text-[#5D5B5B] mb-6">
-          If an account exists with that email, a password reset link has been sent. The link expires in 1 hour.
+          If an account exists with that email, a password reset link has been sent. The link
+          expires in 1 hour.
         </p>
         <Link href="/login" className="text-sm text-[#EF323F] hover:underline">
           Back to sign in

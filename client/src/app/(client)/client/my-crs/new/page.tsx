@@ -67,7 +67,14 @@ export default function NewCRPage() {
   const createCR = useCreateCR();
   const submitCR = useSubmitCR();
 
-  const { control, register, handleSubmit, watch, reset, formState: { errors, isDirty } } = useForm<FormValues>({
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       projectId: '',
@@ -314,11 +321,7 @@ export default function NewCRPage() {
               placeholder="Who is requesting this change?"
               {...register('requestingParty')}
             />
-            <Input
-              label="SOW Reference"
-              placeholder="e.g. SOW-2024-001"
-              {...register('sowRef')}
-            />
+            <Input label="SOW Reference" placeholder="e.g. SOW-2024-001" {...register('sowRef')} />
           </div>
         </div>
 
@@ -358,11 +361,7 @@ export default function NewCRPage() {
         {/* Attachments */}
         <div className="rounded-lg border border-[#D3D3D3] bg-white p-6">
           <h2 className="mb-4 text-sm font-semibold text-[#2D2D2D]">Attachments</h2>
-          <FileUpload
-            files={files}
-            onFilesChange={setFiles}
-            label="Supporting documents"
-          />
+          <FileUpload files={files} onFilesChange={setFiles} label="Supporting documents" />
         </div>
 
         {/* Error */}
@@ -376,10 +375,21 @@ export default function NewCRPage() {
             Cancel
           </Button>
           <div className="flex gap-3">
-            <Button variant="secondary" type="button" onClick={onSaveDraft} loading={createCR.isPending && !submitCR.isPending} disabled={isLoading}>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={onSaveDraft}
+              loading={createCR.isPending && !submitCR.isPending}
+              disabled={isLoading}
+            >
               Save Draft
             </Button>
-            <Button type="button" onClick={onSubmit} loading={submitCR.isPending} disabled={isLoading}>
+            <Button
+              type="button"
+              onClick={onSubmit}
+              loading={submitCR.isPending}
+              disabled={isLoading}
+            >
               Submit for Review
             </Button>
           </div>

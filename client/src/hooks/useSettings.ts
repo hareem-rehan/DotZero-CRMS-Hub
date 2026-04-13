@@ -26,11 +26,17 @@ export const useMe = () =>
     },
   });
 
-export const useUpdateMe = (callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) => {
+export const useUpdateMe = (callbacks?: {
+  onSuccess?: () => void;
+  onError?: (msg: string) => void;
+}) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<MyProfile>) => {
-      const { data } = await apiClient.patch<{ success: boolean; data: MyProfile }>('/auth/me', payload);
+      const { data } = await apiClient.patch<{ success: boolean; data: MyProfile }>(
+        '/auth/me',
+        payload,
+      );
       return data.data;
     },
     onSuccess: (updated) => {
@@ -38,13 +44,18 @@ export const useUpdateMe = (callbacks?: { onSuccess?: () => void; onError?: (msg
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to save';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to save';
       callbacks?.onError?.(msg);
     },
   });
 };
 
-export const useChangePassword = (callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void }) =>
+export const useChangePassword = (callbacks?: {
+  onSuccess?: () => void;
+  onError?: (msg: string) => void;
+}) =>
   useMutation({
     mutationFn: async (payload: { currentPassword: string; newPassword: string }) => {
       const { data } = await apiClient.post('/auth/me/change-password', payload);
@@ -52,7 +63,9 @@ export const useChangePassword = (callbacks?: { onSuccess?: () => void; onError?
     },
     onSuccess: () => callbacks?.onSuccess?.(),
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to change password';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to change password';
       callbacks?.onError?.(msg);
     },
   });
@@ -61,7 +74,10 @@ export const useAdminStats = () =>
   useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ success: boolean; data: { users: number; projects: number; changeRequests: number; pendingCRs: number } }>('/auth/me/stats');
+      const { data } = await apiClient.get<{
+        success: boolean;
+        data: { users: number; projects: number; changeRequests: number; pendingCRs: number };
+      }>('/auth/me/stats');
       return data.data;
     },
   });

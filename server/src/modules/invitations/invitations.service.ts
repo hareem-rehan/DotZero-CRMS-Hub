@@ -16,7 +16,8 @@ export const sendInvitation = async (input: CreateInvitationInput, actorId: stri
     select: { id: true, name: true, status: true },
   });
   if (!project) throw new AppError(404, 'Project not found');
-  if (project.status === 'ARCHIVED') throw new AppError(400, 'Cannot invite to an archived project');
+  if (project.status === 'ARCHIVED')
+    throw new AppError(400, 'Cannot invite to an archived project');
 
   // Check for pending (unused, unexpired) invitation for same email+project
   const existing = await prisma.invitation.findFirst({
@@ -27,7 +28,8 @@ export const sendInvitation = async (input: CreateInvitationInput, actorId: stri
       expiresAt: { gt: new Date() },
     },
   });
-  if (existing) throw new AppError(409, 'An active invitation already exists for this email and project');
+  if (existing)
+    throw new AppError(409, 'An active invitation already exists for this email and project');
 
   const rawToken = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + INVITE_TOKEN_EXPIRY_MS);

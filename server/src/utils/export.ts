@@ -40,29 +40,44 @@ const esc = (v: unknown): string => {
 
 export const generateCSV = (crs: ExportCR[]): string => {
   const headers = [
-    'CR Number', 'Project', 'Client', 'Status', 'Priority', 'Change Type',
-    'Date Submitted', 'Estimated Hours', 'Hourly Rate', 'Total Cost', 'Currency',
-    'Version', 'Submitted By', 'Approved Date', 'Approval Notes', 'DM Recommendation',
+    'CR Number',
+    'Project',
+    'Client',
+    'Status',
+    'Priority',
+    'Change Type',
+    'Date Submitted',
+    'Estimated Hours',
+    'Hourly Rate',
+    'Total Cost',
+    'Currency',
+    'Version',
+    'Submitted By',
+    'Approved Date',
+    'Approval Notes',
+    'DM Recommendation',
   ];
 
-  const rows = crs.map((cr) => [
-    esc(cr.crNumber),
-    esc(cr.projectName),
-    esc(cr.clientName),
-    esc(cr.status),
-    esc(cr.priority),
-    esc(cr.changeType),
-    esc(cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : ''),
-    esc(cr.estimatedHours),
-    esc(cr.hourlyRate),
-    esc(cr.totalCost),
-    esc(cr.currency),
-    esc(`v${cr.version}`),
-    esc(cr.submittedBy),
-    esc(cr.approvedAt ? new Date(cr.approvedAt).toLocaleDateString() : ''),
-    esc(cr.approvalNotes),
-    esc(cr.recommendation),
-  ].join(','));
+  const rows = crs.map((cr) =>
+    [
+      esc(cr.crNumber),
+      esc(cr.projectName),
+      esc(cr.clientName),
+      esc(cr.status),
+      esc(cr.priority),
+      esc(cr.changeType),
+      esc(cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : ''),
+      esc(cr.estimatedHours),
+      esc(cr.hourlyRate),
+      esc(cr.totalCost),
+      esc(cr.currency),
+      esc(`v${cr.version}`),
+      esc(cr.submittedBy),
+      esc(cr.approvedAt ? new Date(cr.approvedAt).toLocaleDateString() : ''),
+      esc(cr.approvalNotes),
+      esc(cr.recommendation),
+    ].join(','),
+  );
 
   return [headers.map(esc).join(','), ...rows].join('\r\n');
 };
@@ -75,17 +90,19 @@ const GREY = '#5D5B5B';
 const LIGHT = '#F7F7F7';
 
 const fmt = (n: number, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
+    n,
+  );
 
-export const generateListPDF = (
-  crs: ExportCR[],
-  filters: ExportFilters,
-): Promise<Buffer> => {
+export const generateListPDF = (crs: ExportCR[], filters: ExportFilters): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const chunks: Buffer[] = [];
     const stream = new Writable({
-      write(chunk, _enc, cb) { chunks.push(Buffer.from(chunk)); cb(); },
+      write(chunk, _enc, cb) {
+        chunks.push(Buffer.from(chunk));
+        cb();
+      },
     });
     doc.pipe(stream);
     stream.on('finish', () => resolve(Buffer.concat(chunks)));
@@ -160,20 +177,28 @@ export const generateListPDF = (
 
     // ── Totals ──
     y += 10;
-    const byCurrency = crs.reduce((acc, cr) => {
-      const c = cr.currency;
-      if (!acc[c]) acc[c] = { hours: 0, cost: 0, count: 0 };
-      acc[c].hours += cr.estimatedHours;
-      acc[c].cost += cr.totalCost;
-      acc[c].count += 1;
-      return acc;
-    }, {} as Record<string, { hours: number; cost: number; count: number }>);
+    const byCurrency = crs.reduce(
+      (acc, cr) => {
+        const c = cr.currency;
+        if (!acc[c]) acc[c] = { hours: 0, cost: 0, count: 0 };
+        acc[c].hours += cr.estimatedHours;
+        acc[c].cost += cr.totalCost;
+        acc[c].count += 1;
+        return acc;
+      },
+      {} as Record<string, { hours: number; cost: number; count: number }>,
+    );
 
     doc.rect(tableLeft, y, doc.page.width - 100, 18).fill(BRAND_RED);
     doc.fillColor('white').font('Helvetica-Bold').fontSize(9);
     doc.text('TOTALS', tableLeft + 4, y + 5, { width: 150 });
     Object.entries(byCurrency).forEach(([cur, t], i) => {
-      doc.text(`${cur}: ${t.count} CRs · ${t.hours}h · ${fmt(t.cost, cur)}`, tableLeft + 160 + i * 160, y + 5, { width: 155 });
+      doc.text(
+        `${cur}: ${t.count} CRs · ${t.hours}h · ${fmt(t.cost, cur)}`,
+        tableLeft + 160 + i * 160,
+        y + 5,
+        { width: 155 },
+      );
     });
 
     doc.end();

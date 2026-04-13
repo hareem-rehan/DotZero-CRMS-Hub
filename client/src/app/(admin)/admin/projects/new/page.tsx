@@ -24,7 +24,8 @@ export default function NewProjectPage() {
         />
         {createMutation.isError && (
           <p className="mt-3 text-sm text-red-600">
-            {(createMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to create project'}
+            {(createMutation.error as { response?: { data?: { error?: string } } })?.response?.data
+              ?.error ?? 'Failed to create project'}
           </p>
         )}
       </div>

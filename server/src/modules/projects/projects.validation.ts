@@ -3,19 +3,22 @@ import { z } from 'zod';
 // Coerce strings from multipart/form-data to proper types
 const coercedNumber = z.preprocess(
   (v) => (v === '' || v === undefined || v === null ? undefined : Number(v)),
-  z.number({ invalid_type_error: 'Hourly rate must be a number' }).positive('Hourly rate must be positive'),
+  z
+    .number({ invalid_type_error: 'Hourly rate must be a number' })
+    .positive('Hourly rate must be positive'),
 );
 
-const coercedBoolean = z.preprocess(
-  (v) => v === 'true' || v === true,
-  z.boolean(),
-);
+const coercedBoolean = z.preprocess((v) => v === 'true' || v === true, z.boolean());
 
 const coercedEmailArray = z.preprocess(
   (v) => {
     if (Array.isArray(v)) return v;
     if (typeof v === 'string') {
-      try { return JSON.parse(v); } catch { return []; }
+      try {
+        return JSON.parse(v);
+      } catch {
+        return [];
+      }
     }
     return [];
   },

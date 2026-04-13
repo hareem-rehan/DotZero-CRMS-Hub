@@ -68,10 +68,11 @@ export default function MyCRsPage() {
     pageSize: 20,
   });
 
-  const handleFilterChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setter(e.target.value);
-    setPage(1);
-  };
+  const handleFilterChange =
+    (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setter(e.target.value);
+      setPage(1);
+    };
 
   return (
     <PageWrapper title="My Change Requests">
@@ -81,7 +82,10 @@ export default function MyCRsPage() {
           <Input
             placeholder="Search CR number or title..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="w-64"
           />
           <Select
@@ -109,9 +113,7 @@ export default function MyCRsPage() {
             className="w-36"
           />
         </div>
-        <Button onClick={() => router.push('/client/my-crs/new')}>
-          + New Change Request
-        </Button>
+        <Button onClick={() => router.push('/client/my-crs/new')}>+ New Change Request</Button>
       </div>
 
       {/* Table */}
@@ -126,8 +128,18 @@ export default function MyCRsPage() {
           </div>
         ) : !data || data.crs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <svg className="h-12 w-12 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="h-12 w-12 text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             <p className="text-sm text-[#5D5B5B]">No change requests found</p>
             <Button variant="secondary" onClick={() => router.push('/client/my-crs/new')}>
@@ -139,15 +151,33 @@ export default function MyCRsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#D3D3D3] bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">CR Number</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Project</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Priority</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Submitted</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Last Updated</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    CR Number
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Title
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Project
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Priority
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Submitted
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Last Updated
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F0F0F0]">
@@ -164,12 +194,20 @@ export default function MyCRsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 max-w-[220px]">
-                      <span className="block truncate text-[#2D2D2D]" title={cr.title}>{cr.title}</span>
+                      <span className="block truncate text-[#2D2D2D]" title={cr.title}>
+                        {cr.title}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-[#5D5B5B]">{cr.project.name}</td>
-                    <td className="px-4 py-3 text-[#5D5B5B] capitalize">{cr.changeType.toLowerCase()}</td>
-                    <td className="px-4 py-3"><CRPriorityBadge priority={cr.priority} /></td>
-                    <td className="px-4 py-3"><CRStatusBadge status={cr.status} /></td>
+                    <td className="px-4 py-3 text-[#5D5B5B] capitalize">
+                      {cr.changeType.toLowerCase()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <CRPriorityBadge priority={cr.priority} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <CRStatusBadge status={cr.status} />
+                    </td>
                     <td className="px-4 py-3 text-[#5D5B5B] text-xs">
                       {cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}
                     </td>
@@ -206,34 +244,53 @@ export default function MyCRsPage() {
       {(myProjects ?? []).some((p) => p.attachments?.length > 0) && (
         <div className="mt-8 space-y-4">
           <h2 className="text-sm font-semibold text-[#2D2D2D]">Project Documents</h2>
-          {(myProjects ?? []).filter((p: MyProject) => p.attachments?.length > 0).map((p: MyProject) => (
-            <div key={p.id} className="rounded-lg border border-[#D3D3D3] bg-white overflow-hidden">
-              <div className="border-b border-[#E5E5E5] bg-[#FAFAFA] px-4 py-2.5">
-                <p className="text-xs font-semibold text-[#2D2D2D]">{p.name} <span className="font-normal text-[#9A9A9A]">({p.code})</span></p>
+          {(myProjects ?? [])
+            .filter((p: MyProject) => p.attachments?.length > 0)
+            .map((p: MyProject) => (
+              <div
+                key={p.id}
+                className="rounded-lg border border-[#D3D3D3] bg-white overflow-hidden"
+              >
+                <div className="border-b border-[#E5E5E5] bg-[#FAFAFA] px-4 py-2.5">
+                  <p className="text-xs font-semibold text-[#2D2D2D]">
+                    {p.name} <span className="font-normal text-[#9A9A9A]">({p.code})</span>
+                  </p>
+                </div>
+                <ul className="divide-y divide-[#F0F0F0]">
+                  {p.attachments.map((a) => (
+                    <li key={a.id} className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <svg
+                          className="h-4 w-4 shrink-0 text-[#5D5B5B]"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        <span className="truncate text-sm text-[#2D2D2D]">{a.fileName}</span>
+                        <span className="shrink-0 text-xs text-[#9A9A9A]">
+                          ({(a.fileSize / 1024).toFixed(0)} KB)
+                        </span>
+                      </div>
+                      <a
+                        href={a.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-4 shrink-0 text-xs font-medium text-[#EF323F] hover:underline"
+                      >
+                        Download
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="divide-y divide-[#F0F0F0]">
-                {p.attachments.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <svg className="h-4 w-4 shrink-0 text-[#5D5B5B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span className="truncate text-sm text-[#2D2D2D]">{a.fileName}</span>
-                      <span className="shrink-0 text-xs text-[#9A9A9A]">({(a.fileSize / 1024).toFixed(0)} KB)</span>
-                    </div>
-                    <a
-                      href={a.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-4 shrink-0 text-xs font-medium text-[#EF323F] hover:underline"
-                    >
-                      Download
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            ))}
         </div>
       )}
 
@@ -244,11 +301,7 @@ export default function MyCRsPage() {
             Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, data.total)} of {data.total} results
           </span>
           <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
+            <Button variant="secondary" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </Button>
             <Button

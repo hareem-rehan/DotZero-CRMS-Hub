@@ -272,7 +272,10 @@ export const deleteUser = async (id: string, actorId: string) => {
     await tx.impactAnalysis.deleteMany({ where: { dmId: id } });
 
     // 2. Preserve CRs — nullify submittedById so CR history is retained
-    await tx.changeRequest.updateMany({ where: { submittedById: id }, data: { submittedById: null } });
+    await tx.changeRequest.updateMany({
+      where: { submittedById: id },
+      data: { submittedById: null },
+    });
 
     // 3. Delete invitations sent by this user
     await tx.invitation.deleteMany({ where: { sentById: id } });

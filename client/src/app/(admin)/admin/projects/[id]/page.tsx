@@ -70,7 +70,12 @@ export default function ProjectDetailPage() {
             loading={generateLinkMutation.isPending}
           >
             <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
             </svg>
             Generate Client Link
           </Button>
@@ -94,7 +99,11 @@ export default function ProjectDetailPage() {
             />
             <InfoRow
               label="Assigned DM"
-              value={project.assignedDm ? `${project.assignedDm.name} (${project.assignedDm.email})` : '—'}
+              value={
+                project.assignedDm
+                  ? `${project.assignedDm.name} (${project.assignedDm.email})`
+                  : '—'
+              }
             />
             <InfoRow label="Show Rate to DM" value={project.showRateToDm ? 'Yes' : 'No'} />
             <InfoRow label="SOW Reference" value={project.sowReference ?? '—'} />
@@ -104,7 +113,8 @@ export default function ProjectDetailPage() {
         {/* Error */}
         {generateLinkMutation.isError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {(generateLinkMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to generate login link'}
+            {(generateLinkMutation.error as { response?: { data?: { error?: string } } })?.response
+              ?.data?.error ?? 'Failed to generate login link'}
           </div>
         )}
 
@@ -112,15 +122,28 @@ export default function ProjectDetailPage() {
         {generatedLinks && generatedLinks.length > 0 && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-4 w-4 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <p className="text-sm font-medium text-green-800">
                 Login link{generatedLinks.length > 1 ? 's' : ''} generated — valid for 24 hours
               </p>
             </div>
             {generatedLinks.map((item, i) => (
-              <div key={item.userId} className="rounded-lg border border-green-200 bg-white p-3 space-y-2">
+              <div
+                key={item.userId}
+                className="rounded-lg border border-green-200 bg-white p-3 space-y-2"
+              >
                 <p className="text-xs font-medium text-[#2D2D2D]">
                   {item.name} <span className="font-normal text-[#5D5B5B]">({item.email})</span>
                 </p>
@@ -142,7 +165,10 @@ export default function ProjectDetailPage() {
 
         {/* Approved CR totals */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <StatCard label="Total Approved Hours" value={`${project.totalApprovedHours.toFixed(1)} hrs`} />
+          <StatCard
+            label="Total Approved Hours"
+            value={`${project.totalApprovedHours.toFixed(1)} hrs`}
+          />
           <StatCard
             label="Total Approved Cost"
             value={`${currency} ${project.totalApprovedCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
@@ -167,9 +193,7 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <RoleBadge role={user.role} />
-                    {!user.isActive && (
-                      <span className="text-xs text-[#5D5B5B]">(Inactive)</span>
-                    )}
+                    {!user.isActive && <span className="text-xs text-[#5D5B5B]">(Inactive)</span>}
                   </div>
                 </li>
               ))}

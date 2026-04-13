@@ -6,7 +6,16 @@ export const impactAnalysisController = {
   async save(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params['id'] as string;
-      const { estimatedHours, timelineImpact, affectedDeliverables, revisedMilestones, resourcesRequired, recommendation, dmSignature, isDraft } = req.body;
+      const {
+        estimatedHours,
+        timelineImpact,
+        affectedDeliverables,
+        revisedMilestones,
+        resourcesRequired,
+        recommendation,
+        dmSignature,
+        isDraft,
+      } = req.body;
       const analysis = await saveImpactAnalysis(id, req.user!.userId, {
         estimatedHours: Number(estimatedHours),
         timelineImpact,

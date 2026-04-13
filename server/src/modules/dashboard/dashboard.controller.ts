@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { listFinanceCRs, getFinanceCRById, getFinanceDashboard, getSADashboard, exportCRs } from './dashboard.service';
+import {
+  listFinanceCRs,
+  getFinanceCRById,
+  getFinanceDashboard,
+  getSADashboard,
+  exportCRs,
+} from './dashboard.service';
 import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
 
@@ -27,7 +33,8 @@ export const dashboardController = {
   // GET /api/v1/dashboard/finance/crs — Finance CR listing with cost data
   async listFinanceCRs(req: Request, res: Response, next: NextFunction) {
     try {
-      const { projectId, clientName, status, showAll, currency, dateFrom, dateTo, page, pageSize } = req.query as Record<string, string>;
+      const { projectId, clientName, status, showAll, currency, dateFrom, dateTo, page, pageSize } =
+        req.query as Record<string, string>;
       const data = await listFinanceCRs({
         projectId,
         clientName,
@@ -49,7 +56,10 @@ export const dashboardController = {
   async getFinanceCR(req: Request, res: Response, next: NextFunction) {
     try {
       const cr = await getFinanceCRById(req.params['id'] as string);
-      if (!cr) return res.status(404).json({ success: false, data: null, error: 'CR not found', meta: null });
+      if (!cr)
+        return res
+          .status(404)
+          .json({ success: false, data: null, error: 'CR not found', meta: null });
       res.json({ success: true, data: cr, error: null, meta: null });
     } catch (err) {
       next(err);
@@ -59,11 +69,22 @@ export const dashboardController = {
   // GET /api/v1/dashboard/export?format=csv|pdf
   async exportCRs(req: Request, res: Response, next: NextFunction) {
     try {
-      const { format = 'csv', projectId, clientName, status, showAll, dateFrom, dateTo } = req.query as Record<string, string>;
+      const {
+        format = 'csv',
+        projectId,
+        clientName,
+        status,
+        showAll,
+        dateFrom,
+        dateTo,
+      } = req.query as Record<string, string>;
       const result = await exportCRs(format as 'csv' | 'pdf', {
-        projectId, clientName, status,
+        projectId,
+        clientName,
+        status,
         showAll: showAll === 'true',
-        dateFrom, dateTo,
+        dateFrom,
+        dateTo,
       });
       await createAuditLog({
         event: 'EXPORT_CRS',

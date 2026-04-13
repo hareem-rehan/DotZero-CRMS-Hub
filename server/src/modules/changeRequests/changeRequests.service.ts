@@ -12,31 +12,34 @@ import {
 } from '../../utils/emailTemplates';
 import { ALLOWED_TRANSITIONS } from './changeRequests.validation';
 
-// ─── Notify user respecting their preferences ─────────────────────────────────
-const notifyIfAllowed = async (
-  userId: string,
-  prefKey: 'notifyOnCrSubmitted' | 'notifyOnCrReturned' | 'notifyOnCrApproved' | 'notifyOnCrDeclined',
-  subject: string,
-  html: string,
-) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true, notifyOnCrSubmitted: true, notifyOnCrReturned: true, notifyOnCrApproved: true, notifyOnCrDeclined: true },
-  });
-  if (!user) return;
-  if (!user[prefKey]) return; // preference is off
-  await sendEmail(user.email, subject, html);
-};
 import type { CreateCRInput, UpdateCRInput } from './changeRequests.validation';
 
 // ─── CR number generation ─────────────────────────────────────────────────────
 // Atomically increment project.crSequence and return the new crNumber
 
-const generateCRNumber = async (projectId: string): Promise<{ crNumber: string; project: { code: string; name: string; assignedDmId: string | null; hourlyRate: unknown; showRateToDm: boolean } }> => {
+const generateCRNumber = async (
+  projectId: string,
+): Promise<{
+  crNumber: string;
+  project: {
+    code: string;
+    name: string;
+    assignedDmId: string | null;
+    hourlyRate: unknown;
+    showRateToDm: boolean;
+  };
+}> => {
   const project = await prisma.project.update({
     where: { id: projectId },
     data: { crSequence: { increment: 1 } },
-    select: { code: true, name: true, crSequence: true, assignedDmId: true, hourlyRate: true, showRateToDm: true },
+    select: {
+      code: true,
+      name: true,
+      crSequence: true,
+      assignedDmId: true,
+      hourlyRate: true,
+      showRateToDm: true,
+    },
   });
   const crNumber = `${project.code}-CO-${String(project.crSequence).padStart(3, '0')}`;
   return { crNumber, project };
@@ -100,10 +103,7 @@ export const listCRs = async (
       }),
     ]);
     const projectIds = [
-      ...new Set([
-        ...assignments.map((a) => a.projectId),
-        ...assignedProjects.map((p) => p.id),
-      ]),
+      ...new Set([...assignments.map((a) => a.projectId), ...assignedProjects.map((p) => p.id)]),
     ];
     where.projectId = { in: projectIds };
     where.status = { in: ['SUBMITTED', 'UNDER_REVIEW', 'ESTIMATED', 'RESUBMITTED'] };
@@ -147,16 +147,32 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
   const cr = await prisma.changeRequest.findUnique({
     where: { id },
     include: {
-      project: { select: { id: true, name: true, code: true, hourlyRate: true, currency: true, assignedDmId: true, showRateToDm: true } },
+      project: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          hourlyRate: true,
+          currency: true,
+          assignedDmId: true,
+          showRateToDm: true,
+        },
+      },
       submittedBy: { select: { id: true, name: true, email: true } },
       attachments: true,
       impactAnalysis: { include: { dm: { select: { id: true, name: true } } } },
       approval: true,
-      statusHistory: { orderBy: { changedAt: 'asc' }, include: { changedBy: { select: { id: true, name: true } } } },
-      internalNotes: actorRole === 'PRODUCT_OWNER' ? false : {
-        orderBy: { createdAt: 'asc' },
-        include: { author: { select: { id: true, name: true } } },
+      statusHistory: {
+        orderBy: { changedAt: 'asc' },
+        include: { changedBy: { select: { id: true, name: true } } },
       },
+      internalNotes:
+        actorRole === 'PRODUCT_OWNER'
+          ? false
+          : {
+              orderBy: { createdAt: 'asc' },
+              include: { author: { select: { id: true, name: true } } },
+            },
     },
   });
 
@@ -195,19 +211,21 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
     return {
       ...rest,
       project: { ...cr.project, hourlyRate: undefined, showRateToDm: cr.project.showRateToDm },
-      impactAnalysis: impactAnalysis ? {
-        id: impactAnalysis.id,
-        changeRequestId: impactAnalysis.changeRequestId,
-        dmId: impactAnalysis.dmId,
-        estimatedHours: impactAnalysis.estimatedHours,
-        timelineImpact: impactAnalysis.timelineImpact,
-        affectedDeliverables: impactAnalysis.affectedDeliverables,
-        revisedMilestones: impactAnalysis.revisedMilestones,
-        resourcesRequired: impactAnalysis.resourcesRequired,
-        recommendation: impactAnalysis.recommendation,
-        isDraft: impactAnalysis.isDraft,
-        // totalCost intentionally omitted — calculated from hours × rate, never sent to DM
-      } : null,
+      impactAnalysis: impactAnalysis
+        ? {
+            id: impactAnalysis.id,
+            changeRequestId: impactAnalysis.changeRequestId,
+            dmId: impactAnalysis.dmId,
+            estimatedHours: impactAnalysis.estimatedHours,
+            timelineImpact: impactAnalysis.timelineImpact,
+            affectedDeliverables: impactAnalysis.affectedDeliverables,
+            revisedMilestones: impactAnalysis.revisedMilestones,
+            resourcesRequired: impactAnalysis.resourcesRequired,
+            recommendation: impactAnalysis.recommendation,
+            isDraft: impactAnalysis.isDraft,
+            // totalCost intentionally omitted — calculated from hours × rate, never sent to DM
+          }
+        : null,
     };
   }
 
@@ -233,7 +251,8 @@ export const createCR = async (
     select: { id: true, status: true, sowReference: true, clientName: true },
   });
   if (!project) throw new AppError(404, 'Project not found');
-  if (project.status === 'ARCHIVED') throw new AppError(400, 'Cannot create CR for an archived project');
+  if (project.status === 'ARCHIVED')
+    throw new AppError(400, 'Cannot create CR for an archived project');
 
   // Verify PO is assigned to this project
   const assignment = await prisma.projectUser.findUnique({
@@ -295,14 +314,17 @@ export const updateCR = async (
   const cr = await prisma.changeRequest.findUnique({ where: { id } });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (cr.status !== 'DRAFT') throw new AppError(400, 'Only DRAFT change requests can be updated');
-  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
+    throw new AppError(403, 'Access denied');
 
   const updated = await prisma.changeRequest.update({
     where: { id },
     data: {
       ...(input.title !== undefined && { title: input.title }),
       ...(input.description !== undefined && { description: input.description }),
-      ...(input.businessJustification !== undefined && { businessJustification: input.businessJustification }),
+      ...(input.businessJustification !== undefined && {
+        businessJustification: input.businessJustification,
+      }),
       ...(input.priority !== undefined && { priority: input.priority }),
       ...(input.changeType !== undefined && { changeType: input.changeType }),
       ...(input.requestingParty !== undefined && { requestingParty: input.requestingParty }),
@@ -344,7 +366,8 @@ export const approveCR = async (
     },
   });
   if (!cr) throw new AppError(404, 'Change request not found');
-  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
+    throw new AppError(403, 'Access denied');
   assertTransition(cr.status, 'APPROVED');
   if (!poSignature?.trim()) throw new AppError(400, 'PO signature is required to approve');
 
@@ -387,7 +410,10 @@ export const approveCR = async (
 
   // Email DM
   if (cr.project.assignedDmId) {
-    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true, notifyOnCrApproved: true } });
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.project.assignedDmId },
+      select: { email: true, name: true, notifyOnCrApproved: true },
+    });
     if (dm?.notifyOnCrApproved) {
       const tpl = crApprovedEmail(dm.name, cr.crNumber, cr.project.name, approvalNotes);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
@@ -407,10 +433,14 @@ export const declineCR = async (
 ) => {
   const cr = await prisma.changeRequest.findUnique({
     where: { id },
-    include: { project: { select: { name: true, assignedDmId: true } }, submittedBy: { select: { id: true } } },
+    include: {
+      project: { select: { name: true, assignedDmId: true } },
+      submittedBy: { select: { id: true } },
+    },
   });
   if (!cr) throw new AppError(404, 'Change request not found');
-  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
+    throw new AppError(403, 'Access denied');
   assertTransition(cr.status, 'DECLINED');
   if (!declineNotes?.trim()) throw new AppError(400, 'Decline notes are required');
 
@@ -437,7 +467,10 @@ export const declineCR = async (
 
   // Email DM with reason
   if (cr.project.assignedDmId) {
-    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true, notifyOnCrDeclined: true } });
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.project.assignedDmId },
+      select: { email: true, name: true, notifyOnCrDeclined: true },
+    });
     if (dm?.notifyOnCrDeclined) {
       const tpl = crDeclinedEmail(dm.name, cr.crNumber, cr.project.name, declineNotes);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
@@ -506,7 +539,9 @@ export const resubmitCR = async (
         dateOfRequest: new Date(),
         ...(input.title !== undefined && { title: input.title }),
         ...(input.description !== undefined && { description: input.description }),
-        ...(input.businessJustification !== undefined && { businessJustification: input.businessJustification }),
+        ...(input.businessJustification !== undefined && {
+          businessJustification: input.businessJustification,
+        }),
         ...(input.priority !== undefined && { priority: input.priority }),
         ...(input.changeType !== undefined && { changeType: input.changeType }),
         ...(input.requestingParty !== undefined && { requestingParty: input.requestingParty }),
@@ -533,7 +568,10 @@ export const resubmitCR = async (
 
   // Email DM
   if (cr.project.assignedDmId) {
-    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true, notifyOnCrSubmitted: true } });
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.project.assignedDmId },
+      select: { email: true, name: true, notifyOnCrSubmitted: true },
+    });
     if (dm?.notifyOnCrSubmitted) {
       const tpl = crResubmittedEmail(dm.name, cr.crNumber, cr.project.name, newVersion, id);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
@@ -548,7 +586,8 @@ export const resubmitCR = async (
 export const cancelCR = async (id: string, actorId: string, actorRole: string, reason?: string) => {
   const cr = await prisma.changeRequest.findUnique({ where: { id } });
   if (!cr) throw new AppError(404, 'Change request not found');
-  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
+    throw new AppError(403, 'Access denied');
   assertTransition(cr.status, 'CANCELLED');
 
   await prisma.$transaction([
@@ -580,7 +619,8 @@ export const cancelCR = async (id: string, actorId: string, actorRole: string, r
 export const getCRVersions = async (id: string, actorId: string, actorRole: string) => {
   const cr = await prisma.changeRequest.findUnique({ where: { id } });
   if (!cr) throw new AppError(404, 'Change request not found');
-  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
+    throw new AppError(403, 'Access denied');
 
   return prisma.cRVersion.findMany({
     where: { changeRequestId: id },
@@ -591,10 +631,16 @@ export const getCRVersions = async (id: string, actorId: string, actorRole: stri
 
 // ─── Internal notes ───────────────────────────────────────────────────────────
 
-export const addInternalNote = async (crId: string, actorId: string, actorRole: string, content: string) => {
+export const addInternalNote = async (
+  crId: string,
+  actorId: string,
+  actorRole: string,
+  content: string,
+) => {
   const cr = await prisma.changeRequest.findUnique({ where: { id: crId } });
   if (!cr) throw new AppError(404, 'Change request not found');
-  if (!['DELIVERY_MANAGER', 'SUPER_ADMIN'].includes(actorRole)) throw new AppError(403, 'Access denied');
+  if (!['DELIVERY_MANAGER', 'SUPER_ADMIN'].includes(actorRole))
+    throw new AppError(403, 'Access denied');
   if (!content?.trim()) throw new AppError(400, 'Note content is required');
 
   const note = await prisma.internalNote.create({
@@ -651,7 +697,10 @@ export const submitCR = async (id: string, actorId: string) => {
 
   // Email assigned DM
   if (cr.project.assignedDmId) {
-    const dm = await prisma.user.findUnique({ where: { id: cr.project.assignedDmId }, select: { email: true, name: true } });
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.project.assignedDmId },
+      select: { email: true, name: true },
+    });
     if (dm) {
       const tpl = crSubmittedEmail(dm.name, cr.crNumber, cr.project.name, id);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
@@ -660,10 +709,24 @@ export const submitCR = async (id: string, actorId: string) => {
 
   // Trigger #8 — notify PO of status change
   {
-    const po = await prisma.user.findUnique({ where: { id: cr.submittedById }, select: { id: true, name: true, notifyOnCrSubmitted: true } });
+    const po = await prisma.user.findUnique({
+      where: { id: cr.submittedById },
+      select: { id: true, name: true, notifyOnCrSubmitted: true },
+    });
     if (po?.notifyOnCrSubmitted) {
-      const tpl = statusChangedEmail(po.name, cr.crNumber, cr.project.name, 'SUBMITTED', id, 'PRODUCT_OWNER');
-      await sendEmail((await prisma.user.findUnique({ where: { id: po.id }, select: { email: true } }))!.email, tpl.subject, tpl.html).catch(() => {});
+      const tpl = statusChangedEmail(
+        po.name,
+        cr.crNumber,
+        cr.project.name,
+        'SUBMITTED',
+        id,
+        'PRODUCT_OWNER',
+      );
+      await sendEmail(
+        (await prisma.user.findUnique({ where: { id: po.id }, select: { email: true } }))!.email,
+        tpl.subject,
+        tpl.html,
+      ).catch(() => {});
     }
   }
 

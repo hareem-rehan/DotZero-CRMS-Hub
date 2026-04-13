@@ -19,31 +19,45 @@ function RegisterForm() {
   const token = searchParams.get('token') ?? '';
   const { mutate: register, isPending, error } = useRegister();
 
-  const { register: formRegister, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();
+  const {
+    register: formRegister,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<RegisterForm>();
   const password = watch('password');
 
   const errorMessage = error
     ? isAxiosError(error)
-      ? (error.response?.data?.error as string) ?? 'Something went wrong'
+      ? ((error.response?.data?.error as string) ?? 'Something went wrong')
       : 'Something went wrong'
     : null;
 
   if (!token) {
     return (
       <div className="text-center">
-        <p className="text-[#EF323F] text-sm">Invalid invitation link. Please contact your administrator.</p>
+        <p className="text-[#EF323F] text-sm">
+          Invalid invitation link. Please contact your administrator.
+        </p>
       </div>
     );
   }
 
   const onSubmit = (data: RegisterForm) => {
-    register({ token, name: data.name, password: data.password, confirmPassword: data.confirmPassword });
+    register({
+      token,
+      name: data.name,
+      password: data.password,
+      confirmPassword: data.confirmPassword,
+    });
   };
 
   return (
     <>
       <h1 className="text-xl font-bold text-[#2D2D2D] mb-1">Create your account</h1>
-      <p className="text-sm text-[#5D5B5B] mb-6">Complete your registration to access DotZero CR Portal.</p>
+      <p className="text-sm text-[#5D5B5B] mb-6">
+        Complete your registration to access DotZero CR Portal.
+      </p>
 
       {errorMessage && (
         <div className="mb-4 rounded-md bg-red-50 border border-[#EF323F] px-4 py-3 text-sm text-[#EF323F]">

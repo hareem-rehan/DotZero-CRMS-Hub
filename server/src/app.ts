@@ -1,7 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import path from 'path';
 import { env } from './config/env';
 import { LOCAL_UPLOADS_DIR } from './utils/fileUpload';
 import { errorHandler } from './middleware/errorHandler';
