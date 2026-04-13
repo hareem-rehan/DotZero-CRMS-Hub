@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { FileUpload } from '@/components/ui/FileUpload';
+import { apiClient } from '@/lib/apiClient';
 import { useMyProjects } from '@/hooks/useProjects';
 import { useCreateCR, useSubmitCR } from '@/hooks/useCRs';
 
@@ -53,6 +54,7 @@ export default function NewCRPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [submitError, setSubmitError] = useState('');
+  const [hasDraftBanner, setHasDraftBanner] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftIdRef = useRef<string | null>(null);
 
@@ -85,13 +87,32 @@ export default function NewCRPage() {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.values) reset(parsed.values);
+        if (parsed.values) {
+          reset(parsed.values);
+          setHasDraftBanner(true);
+        }
         if (parsed.crId) draftIdRef.current = parsed.crId;
       }
     } catch {
       // ignore
     }
   }, [reset]);
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    draftIdRef.current = null;
+    setHasDraftBanner(false);
+    reset({
+      projectId: '',
+      title: '',
+      description: '',
+      businessJustification: '',
+      priority: 'MEDIUM',
+      changeType: 'SCOPE',
+      requestingParty: '',
+      sowRef: '',
+    });
+  };
 
   // ── Auto-save every 60s ──────────────────────────────────────────────────────
   const formValues = watch();
@@ -166,6 +187,7 @@ export default function NewCRPage() {
     try {
       let crId = draftIdRef.current;
       if (!crId) {
+        // No draft yet — create it now
         const cr = await createCR.mutateAsync({
           payload: {
             projectId: values.projectId,
@@ -180,6 +202,17 @@ export default function NewCRPage() {
           files,
         });
         crId = cr.id;
+      } else {
+        // Draft exists — always update with latest values before submitting
+        await apiClient.patch(`/change-requests/${crId}`, {
+          title: values.title,
+          description: values.description,
+          businessJustification: values.businessJustification,
+          priority: values.priority,
+          changeType: values.changeType,
+          requestingParty: values.requestingParty,
+          sowRef: values.sowRef,
+        });
       }
       await submitCR.mutateAsync(crId);
       localStorage.removeItem(DRAFT_KEY);
@@ -195,6 +228,22 @@ export default function NewCRPage() {
   return (
     <PageWrapper title="New Change Request">
       <form className="mx-auto max-w-3xl space-y-6">
+        {/* Draft restored banner */}
+        {hasDraftBanner && (
+          <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <span className="text-sm text-amber-800">
+              📝 A previous draft was restored. Continue editing or discard it to start fresh.
+            </span>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="ml-4 text-sm font-medium text-amber-700 underline hover:text-amber-900"
+            >
+              Discard &amp; Start Fresh
+            </button>
+          </div>
+        )}
+
         {/* Auto-save indicator */}
         <div className="flex items-center justify-between">
           <p className="text-xs text-[#5D5B5B]">Auto-saves every 60 seconds</p>

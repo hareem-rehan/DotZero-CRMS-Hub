@@ -91,9 +91,9 @@ export const getUserById = async (id: string) => {
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 export const createUser = async (input: CreateUserInput, actorId: string) => {
-  // Uniqueness check
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new AppError(409, 'A user with this email already exists');
+  // Uniqueness check: same email + same role is not allowed
+  const existing = await prisma.user.findFirst({ where: { email: input.email, role: input.role } });
+  if (existing) throw new AppError(409, 'A user with this email and role already exists');
 
   // Create with random placeholder password — user must set via welcome link
   const tempHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
@@ -271,9 +271,8 @@ export const deleteUser = async (id: string, actorId: string) => {
     await tx.cRApproval.deleteMany({ where: { approvedById: id } });
     await tx.impactAnalysis.deleteMany({ where: { dmId: id } });
 
-    // 2. Delete CRs submitted by this user (cascades CR attachments,
-    //    remaining impact analyses, approvals, versions, status history, notes)
-    await tx.changeRequest.deleteMany({ where: { submittedById: id } });
+    // 2. Preserve CRs — nullify submittedById so CR history is retained
+    await tx.changeRequest.updateMany({ where: { submittedById: id }, data: { submittedById: null } });
 
     // 3. Delete invitations sent by this user
     await tx.invitation.deleteMany({ where: { sentById: id } });

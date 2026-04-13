@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { SignatureCanvas } from '@/components/ui/SignatureCanvas';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { toast } from 'sonner';
 import {
   useCR,
@@ -383,16 +384,16 @@ export default function CRDetailPage() {
           <div className="space-y-4">
             <p className="text-sm text-[#5D5B5B]">Edit the fields below and resubmit. A version snapshot will be saved before changes.</p>
             <Input label="Title" value={resubTitle} onChange={(e) => setResubTitle(e.target.value)} />
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Description</label>
-              <textarea rows={4} value={resubDescription} onChange={(e) => setResubDescription(e.target.value)}
-                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Business Justification</label>
-              <textarea rows={3} value={resubJustification} onChange={(e) => setResubJustification(e.target.value)}
-                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]" />
-            </div>
+            <RichTextEditor
+              label="Description"
+              value={resubDescription ?? ''}
+              onChange={setResubDescription}
+            />
+            <RichTextEditor
+              label="Business Justification"
+              value={resubJustification ?? ''}
+              onChange={setResubJustification}
+            />
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setShowResubmit(false)}>Cancel</Button>
               <Button

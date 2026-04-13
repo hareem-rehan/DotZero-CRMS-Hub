@@ -295,8 +295,8 @@ export const generateClientLoginLinks = async (projectId: string, actorId: strin
   // Also try clientEmail directly (covers cases where user was re-invited but not yet in assignments)
   let clients = assignedClients;
   if (clients.length === 0 && project.clientEmail) {
-    const poByEmail = await prisma.user.findUnique({
-      where: { email: project.clientEmail },
+    const poByEmail = await prisma.user.findFirst({
+      where: { email: project.clientEmail, role: 'PRODUCT_OWNER' },
       select: { id: true, name: true, email: true, role: true, isActive: true },
     });
     if (poByEmail && poByEmail.role === 'PRODUCT_OWNER' && poByEmail.isActive) {

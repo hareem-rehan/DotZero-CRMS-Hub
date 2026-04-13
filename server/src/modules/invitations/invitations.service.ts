@@ -75,8 +75,8 @@ export const sendInvitationIfNotExists = async (
   });
   if (existingInvite) return;
 
-  // Skip if user already exists and is assigned to this project
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  // Skip if a PO with this email already exists and is assigned to this project
+  const existingUser = await prisma.user.findFirst({ where: { email, role: 'PRODUCT_OWNER' } });
   if (existingUser) {
     const assignment = await prisma.projectUser.findUnique({
       where: { projectId_userId: { projectId, userId: existingUser.id } },

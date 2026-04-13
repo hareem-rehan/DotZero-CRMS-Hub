@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
                   ) : (crData?.crs ?? []).map((cr) => (
                     <tr key={cr.id} className="border-b border-[#E5E5E5] last:border-0 hover:bg-[#FAFAFA]">
                       <td className="px-4 py-3">
-                        <Link href={`/admin/change-requests`} className="font-mono text-xs font-semibold text-[#EF323F] hover:underline">{cr.crNumber}</Link>
+                        <Link href={`/admin/change-requests/${cr.id}`} className="font-mono text-xs font-semibold text-[#EF323F] hover:underline">{cr.crNumber}</Link>
                       </td>
                       <td className="px-4 py-3 font-medium text-[#2D2D2D] max-w-[200px] truncate">{cr.title}</td>
                       <td className="px-4 py-3 text-[#5D5B5B]">{cr.project.name}</td>

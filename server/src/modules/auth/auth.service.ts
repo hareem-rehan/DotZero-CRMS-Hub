@@ -14,17 +14,45 @@ const JWT_EXPIRY_REMEMBER = '30d';
 
 export const authService = {
   async login(input: LoginInput, ipAddress?: string, userAgent?: string) {
-    const user = await prisma.user.findUnique({ where: { email: input.email } });
+    // Multiple accounts can share the same email (different roles) — find the one whose password matches
+    const candidates = await prisma.user.findMany({ where: { email: input.email } });
 
     // Generic error — never reveal which field is wrong
     const invalidCredentialsError = new AppError(401, 'Invalid email or password');
 
-    if (!user) {
+    if (candidates.length === 0) {
       await createAuditLog({
         event: 'FAILED_LOGIN_ATTEMPT',
         entityType: 'User',
         entityId: input.email,
         metadata: { reason: 'user_not_found' },
+        ipAddress,
+        userAgent,
+      });
+      throw invalidCredentialsError;
+    }
+
+    // Find the account whose password matches
+    let user = null;
+    for (const candidate of candidates) {
+      const matches = await bcrypt.compare(input.password, candidate.passwordHash);
+      if (matches) { user = candidate; break; }
+    }
+
+    if (!user) {
+      // Increment failed attempts on all matching accounts
+      for (const candidate of candidates) {
+        const newCount = candidate.failedLoginAttempts + 1;
+        await prisma.user.update({
+          where: { id: candidate.id },
+          data: { failedLoginAttempts: newCount, isLocked: newCount >= MAX_FAILED_ATTEMPTS },
+        });
+      }
+      await createAuditLog({
+        event: 'FAILED_LOGIN_ATTEMPT',
+        entityType: 'User',
+        entityId: input.email,
+        metadata: { reason: 'wrong_password' },
         ipAddress,
         userAgent,
       });
@@ -37,37 +65,6 @@ export const authService = {
 
     if (!user.isActive) {
       throw new AppError(403, 'Account is deactivated. Please contact your administrator.');
-    }
-
-    const passwordValid = await bcrypt.compare(input.password, user.passwordHash);
-
-    if (!passwordValid) {
-      const newFailedCount = user.failedLoginAttempts + 1;
-      const shouldLock = newFailedCount >= MAX_FAILED_ATTEMPTS;
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginAttempts: newFailedCount,
-          isLocked: shouldLock,
-        },
-      });
-
-      await createAuditLog({
-        event: 'FAILED_LOGIN_ATTEMPT',
-        actorId: user.id,
-        entityType: 'User',
-        entityId: user.id,
-        metadata: { attempt: newFailedCount, locked: shouldLock },
-        ipAddress,
-        userAgent,
-      });
-
-      if (shouldLock) {
-        throw new AppError(403, 'Account locked after too many failed attempts. Please check your email to unlock.');
-      }
-
-      throw invalidCredentialsError;
     }
 
     // Successful login — reset failed attempts
@@ -100,53 +97,38 @@ export const authService = {
   },
 
   async forgotPassword(input: ForgotPasswordInput) {
-    const user = await prisma.user.findUnique({ where: { email: input.email } });
+    // Multiple accounts can share the same email — send a reset link for each
+    const users = await prisma.user.findMany({ where: { email: input.email } });
 
     // Always respond with success — never reveal if email exists
-    if (!user) return { message: 'If that email exists, a reset link has been sent.' };
+    if (!users.length) return { message: 'If that email exists, a reset link has been sent.' };
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MS);
+    for (const user of users) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MS);
+      const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-    // Store token hash (not raw token) for security
-    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+      await prisma.user.update({ where: { id: user.id }, data: { passwordSetAt: expiresAt } });
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        // Reuse passwordSetAt as reset token expiry marker — store token in a temp field
-        // We store the hash in passwordHash temporarily... No, that's wrong.
-        // Use a dedicated approach: store token + expiry in the user record
-        // For simplicity, we embed token:expiry in a reversible format in passwordSetAt
-        // Best practice: store hashed token in DB. We'll use a convention:
-        // passwordSetAt = expiry datetime, and store token in a separate mechanism.
-        // Simple approach: store the hashed token temporarily. On reset, find by hash.
-        passwordSetAt: expiresAt,
-      },
-    });
+      await prisma.auditLog.create({
+        data: {
+          event: 'PASSWORD_RESET_TOKEN',
+          actorId: user.id,
+          entityType: 'User',
+          entityId: user.id,
+          metadata: { tokenHash, expiresAt: expiresAt.toISOString() },
+        },
+      });
 
-    // Store token hash in a way we can look it up
-    // We'll use a Prisma raw update to store it in a temp column
-    // Since we don't have a dedicated reset_token column, we'll use the auditLog metadata
-    // to store it and look it up on reset. This avoids schema changes.
-    // BETTER: store in AuditLog with event=PASSWORD_RESET_TOKEN and entityId=userId
-    await prisma.auditLog.create({
-      data: {
-        event: 'PASSWORD_RESET_TOKEN',
-        actorId: user.id,
-        entityType: 'User',
-        entityId: user.id,
-        metadata: { tokenHash, expiresAt: expiresAt.toISOString() },
-      },
-    });
+      // Email is sent by the controller after this returns — handle per-user here
+      const resetLink = `${env.CLIENT_URL}/reset-password?token=${resetToken}`;
+      const { passwordResetEmail } = await import('../../utils/emailTemplates');
+      const { sendEmail } = await import('../../utils/email');
+      const tpl = passwordResetEmail(user.name, resetLink);
+      await sendEmail(user.email, tpl.subject, tpl.html).catch(() => {});
+    }
 
-    return {
-      message: 'If that email exists, a reset link has been sent.',
-      resetToken, // Returned to controller which emails it
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-    };
+    return { message: 'If that email exists, a reset link has been sent.' };
   },
 
   async resetPassword(input: ResetPasswordInput) {
@@ -299,9 +281,9 @@ export const authService = {
     if (invite.usedAt) throw new AppError(400, 'This invitation has already been used');
     if (invite.expiresAt < new Date()) throw new AppError(400, 'Invitation has expired');
 
-    // Check if email already registered
-    const existing = await prisma.user.findUnique({ where: { email: invite.email } });
-    if (existing) throw new AppError(409, 'An account with this email already exists');
+    // Check if this email+role combination is already registered
+    const existing = await prisma.user.findFirst({ where: { email: invite.email, role: invite.role } });
+    if (existing) throw new AppError(409, 'An account with this email and role already exists');
 
     const passwordHash = await bcrypt.hash(input.password, 12);
 

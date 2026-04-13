@@ -89,11 +89,23 @@ export const listCRs = async (
     where.projectId = { in: projectIds };
     where.submittedById = actorId; // PO only sees their own CRs
   } else if (actorRole === 'DELIVERY_MANAGER') {
-    const assignments = await prisma.projectUser.findMany({
-      where: { userId: actorId },
-      select: { projectId: true },
-    });
-    where.projectId = { in: assignments.map((a) => a.projectId) };
+    const [assignments, assignedProjects] = await Promise.all([
+      prisma.projectUser.findMany({
+        where: { userId: actorId },
+        select: { projectId: true },
+      }),
+      prisma.project.findMany({
+        where: { assignedDmId: actorId },
+        select: { id: true },
+      }),
+    ]);
+    const projectIds = [
+      ...new Set([
+        ...assignments.map((a) => a.projectId),
+        ...assignedProjects.map((p) => p.id),
+      ]),
+    ];
+    where.projectId = { in: projectIds };
     where.status = { in: ['SUBMITTED', 'UNDER_REVIEW', 'ESTIMATED', 'RESUBMITTED'] };
   } else if (actorRole === 'FINANCE') {
     where.status = { in: ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] };
@@ -138,7 +150,7 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
       project: { select: { id: true, name: true, code: true, hourlyRate: true, currency: true, assignedDmId: true, showRateToDm: true } },
       submittedBy: { select: { id: true, name: true, email: true } },
       attachments: true,
-      impactAnalysis: true,
+      impactAnalysis: { include: { dm: { select: { id: true, name: true } } } },
       approval: true,
       statusHistory: { orderBy: { changedAt: 'asc' }, include: { changedBy: { select: { id: true, name: true } } } },
       internalNotes: actorRole === 'PRODUCT_OWNER' ? false : {
@@ -453,7 +465,10 @@ export const resubmitCR = async (
     },
   });
   if (!cr) throw new AppError(404, 'Change request not found');
-  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (actorRole === 'PRODUCT_OWNER') {
+    const projectIds = await getPOScope(actorId);
+    if (!projectIds.includes(cr.projectId)) throw new AppError(403, 'Access denied');
+  }
   assertTransition(cr.status, 'RESUBMITTED');
 
   const newVersion = cr.version + 1;

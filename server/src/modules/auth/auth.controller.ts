@@ -21,14 +21,6 @@ export const authController = {
   async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.forgotPassword(req.body);
-
-      // Send reset email if a token was generated
-      if (result.resetToken && result.email) {
-        const resetUrl = `${env.CLIENT_URL}/reset-password?token=${result.resetToken}`;
-        const tpl = passwordResetEmail(result.name ?? 'there', resetUrl);
-        await sendEmail(result.email, tpl.subject, tpl.html);
-      }
-
       res.json({ success: true, data: { message: result.message }, error: null, meta: null });
     } catch (err) {
       next(err);

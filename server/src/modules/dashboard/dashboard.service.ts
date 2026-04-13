@@ -103,7 +103,7 @@ export const exportCRs = async (
     totalCost: cr.totalCost,
     currency: cr.project.currency ?? 'USD',
     version: (cr as unknown as { version: number }).version ?? 1,
-    submittedBy: cr.submittedBy.name,
+    submittedBy: cr.submittedBy?.name ?? 'Deleted User',
     approvedAt: cr.approval?.approvedAt ? new Date(cr.approval.approvedAt) : null,
     approvalNotes: cr.approval?.approvalNotes ?? null,
     recommendation: cr.impactAnalysis?.recommendation ?? null,
@@ -264,7 +264,7 @@ export const getSADashboard = async () => {
       id: cr.id,
       crNumber: cr.crNumber,
       projectName: cr.project.name,
-      submittedBy: cr.submittedBy.name,
+      submittedBy: cr.submittedBy?.name ?? 'Deleted User',
       dateOfRequest: cr.dateOfRequest,
       hoursStuck: cr.dateOfRequest
         ? Math.floor((Date.now() - new Date(cr.dateOfRequest).getTime()) / 3600000)
