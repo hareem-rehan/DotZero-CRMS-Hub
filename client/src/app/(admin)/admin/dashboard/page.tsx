@@ -69,7 +69,7 @@ const ROLE_LABELS: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
-  const { data, isLoading } = useDashboard();
+  const { data, isLoading, isError } = useDashboard();
   const sa = data as SADashboardData | undefined;
 
   // CR table filters
@@ -112,7 +112,11 @@ export default function AdminDashboardPage() {
 
   return (
     <PageWrapper title="Dashboard">
-      {isLoading ? (
+      {isError ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          Failed to load dashboard data. Please refresh the page.
+        </p>
+      ) : isLoading ? (
         <div className="flex h-40 items-center justify-center text-sm text-[#5D5B5B]">Loading…</div>
       ) : (
         <div className="space-y-6">

@@ -203,7 +203,7 @@ export default function UsersListPage() {
   const [toggleTarget, setToggleTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
-  const { data, isLoading } = useUsers({
+  const { data, isLoading, isError } = useUsers({
     role: role || undefined,
     isActive: isActive !== '' ? isActive === 'true' : undefined,
     search: search || undefined,
@@ -315,6 +315,11 @@ export default function UsersListPage() {
         />
       </div>
 
+      {isError && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          Failed to load users. Please refresh the page.
+        </p>
+      )}
       <DataTable
         columns={columns}
         data={data?.users ?? []}

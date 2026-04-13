@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { useCR, useAddNote } from '@/hooks/useCRs';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function DmCRDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,14 +63,14 @@ export default function DmCRDetailPage() {
             <p className="text-xs text-[#5D5B5B]">Description</p>
             <div
               className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-3 text-sm text-[#2D2D2D]"
-              dangerouslySetInnerHTML={{ __html: cr.description }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
             />
           </div>
           <div className="mt-4">
             <p className="text-xs text-[#5D5B5B]">Business Justification</p>
             <div
               className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-3 text-sm text-[#2D2D2D]"
-              dangerouslySetInnerHTML={{ __html: cr.businessJustification }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
             />
           </div>
         </div>

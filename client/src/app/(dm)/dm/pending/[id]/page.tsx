@@ -9,6 +9,7 @@ import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { SignatureCanvas } from '@/components/ui/SignatureCanvas';
 import { toast } from 'sonner';
 import { useCR, useSaveImpactAnalysis } from '@/hooks/useCRs';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function DmCREstimatePage() {
   const { id } = useParams<{ id: string }>();
@@ -114,14 +115,14 @@ export default function DmCREstimatePage() {
             <p className="text-xs text-[#5D5B5B]">Description</p>
             <div
               className="mt-1 rounded-lg border border-[#E5E5E5] bg-white p-3 text-sm text-[#2D2D2D]"
-              dangerouslySetInnerHTML={{ __html: cr.description }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
             />
           </div>
           <div className="mt-4">
             <p className="text-xs text-[#5D5B5B]">Business Justification</p>
             <div
               className="mt-1 rounded-lg border border-[#E5E5E5] bg-white p-3 text-sm text-[#2D2D2D]"
-              dangerouslySetInnerHTML={{ __html: cr.businessJustification }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
             />
           </div>
           {cr.attachments.length > 0 && (

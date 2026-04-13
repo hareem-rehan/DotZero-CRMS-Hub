@@ -162,6 +162,9 @@ export const updateUser = async (id: string, input: UpdateUserInput, actorId: st
     data: {
       ...(input.name !== undefined && { name: input.name }),
       ...(input.role !== undefined && { role: input.role }),
+      // Bump tokenVersion when role changes to invalidate existing JWTs immediately
+      ...(input.role !== undefined &&
+        input.role !== user.role && { tokenVersion: { increment: 1 } }),
     },
     select: {
       id: true,

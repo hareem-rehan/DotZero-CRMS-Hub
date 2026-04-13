@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { SignatureCanvas } from '@/components/ui/SignatureCanvas';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { toast } from 'sonner';
 import {
   useCR,
@@ -306,7 +307,7 @@ export default function CRDetailPage() {
               <h3 className="mb-3 text-sm font-semibold text-[#2D2D2D]">Description</h3>
               <div
                 className="prose prose-sm max-w-none text-[#2D2D2D]"
-                dangerouslySetInnerHTML={{ __html: cr.description }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
               />
             </div>
           )}
@@ -317,7 +318,7 @@ export default function CRDetailPage() {
               <h3 className="mb-3 text-sm font-semibold text-[#2D2D2D]">Business Justification</h3>
               <div
                 className="prose prose-sm max-w-none text-[#2D2D2D]"
-                dangerouslySetInnerHTML={{ __html: cr.businessJustification }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
               />
             </div>
           )}

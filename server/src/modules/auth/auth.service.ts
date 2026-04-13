@@ -89,7 +89,7 @@ export const authService = {
 
     const expiresIn = input.rememberMe ? JWT_EXPIRY_REMEMBER : JWT_EXPIRY_DEFAULT;
     const token = jwt.sign(
-      { userId: user.id, role: user.role, email: user.email },
+      { userId: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion },
       env.JWT_SECRET,
       { expiresIn } as jwt.SignOptions,
     );
@@ -308,7 +308,7 @@ export const authService = {
     });
 
     const jwtToken = jwt.sign(
-      { userId: user.id, role: user.role, email: user.email },
+      { userId: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion },
       env.JWT_SECRET,
       { expiresIn: '8h' } as jwt.SignOptions,
     );

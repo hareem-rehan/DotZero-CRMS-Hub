@@ -124,7 +124,7 @@ export const exportCRs = async (
     hourlyRate: cr.hourlyRate,
     totalCost: cr.totalCost,
     currency: cr.project.currency ?? 'USD',
-    version: (cr as unknown as { version: number }).version ?? 1,
+    version: cr.version ?? 1,
     submittedBy: cr.submittedBy?.name ?? 'Deleted User',
     approvedAt: cr.approval?.approvedAt ? new Date(cr.approval.approvedAt) : null,
     approvalNotes: cr.approval?.approvalNotes ?? null,

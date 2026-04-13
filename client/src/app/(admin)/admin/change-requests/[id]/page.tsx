@@ -6,6 +6,7 @@ import { PageWrapper } from '@/components/layouts/PageWrapper';
 import { Button } from '@/components/ui/Button';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { useCR, useCRVersions } from '@/hooks/useCRs';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function AdminCRDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -90,7 +91,7 @@ export default function AdminCRDetailPage() {
               <p className="text-xs text-[#5D5B5B]">Description</p>
               <div
                 className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
-                dangerouslySetInnerHTML={{ __html: cr.description }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
               />
             </div>
           )}
@@ -100,7 +101,7 @@ export default function AdminCRDetailPage() {
               <p className="text-xs text-[#5D5B5B]">Business Justification</p>
               <div
                 className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
-                dangerouslySetInnerHTML={{ __html: cr.businessJustification }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
               />
             </div>
           )}

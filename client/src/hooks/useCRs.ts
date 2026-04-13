@@ -22,7 +22,13 @@ export interface CRSummary {
   changeType: string;
   dateOfRequest: string | null;
   updatedAt: string;
-  project: { id: string; name: string; code: string; hourlyRate?: string | number; currency?: string };
+  project: {
+    id: string;
+    name: string;
+    code: string;
+    hourlyRate?: string | number;
+    currency?: string;
+  };
   submittedBy: { id: string; name: string };
   _count: { attachments: number };
 }
