@@ -62,7 +62,7 @@ dotzero-cr-portal/
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
 │   │   ├── components/
-│   │   │   ├── ui/                # Button, Input, Modal, Badge, DataTable
+│   │   │   ├── ui/                # Button, Input, Modal, Badge, DataTable, SignatureCanvas, FileUpload, RichTextEditor
 │   │   │   ├── forms/             # CrForm, ProjectForm, ImpactAnalysisForm
 │   │   │   └── layouts/           # Sidebar, Navbar, PageWrapper
 │   │   ├── hooks/                 # useAuth, useCr, useFilters, usePagination
@@ -78,12 +78,13 @@ dotzero-cr-portal/
 │   ├── src/
 │   │   ├── config/                # db.ts, env.ts, logger.ts
 │   │   ├── modules/
-│   │   │   ├── auth/              # Login, JWT, invite token verification
+│   │   │   ├── auth/              # Login, JWT, invite token verification, profile CRUD
 │   │   │   ├── users/             # CRUD, role assignment
 │   │   │   ├── projects/          # Project creation, DM/client assignment
 │   │   │   ├── changeRequests/    # CR submission, status transitions
 │   │   │   ├── impactAnalysis/    # DM analysis (structured + free-text)
 │   │   │   ├── invitations/       # Generate + send invite links
+│   │   │   ├── auditLog/          # SA-only audit log query endpoint
 │   │   │   └── dashboard/         # Aggregated stats, filters
 │   │   ├── middleware/            # auth.ts, errorHandler.ts, rateLimiter.ts, roleGuard.ts, validate.ts
 │   │   ├── utils/
@@ -328,3 +329,5 @@ SENTRY_DSN=<dsn>
 | JWT (not sessions) | Stateless backend; horizontally scalable; works with Vercel edge functions |
 | S3/R2 for files (not DB blobs) | Scalable; CDN-cacheable; doesn't bloat DB backups |
 | DM cannot see financials | Business rule — cost calculations happen server-side only; DM API responses strip rate/cost fields |
+| Local file fallback (dev) | When `S3_ACCESS_KEY` is not set, `fileUpload.ts` writes files to `server/uploads/` and serves them via `express.static`. Production always requires S3. |
+| Auto UNDER_REVIEW on DM open | When a DM calls `GET /change-requests/:id` and the CR status is SUBMITTED, the service atomically transitions it to UNDER_REVIEW and creates a StatusHistory entry — no separate endpoint needed. |

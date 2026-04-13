@@ -297,8 +297,8 @@ Every resubmission by the PO creates an immutable snapshot of the CR at that poi
 
 | Entity | Key Fields |
 |--------|-----------|
-| User | id, name, email, passwordHash, role (SUPER_ADMIN · PRODUCT_OWNER · DELIVERY_MANAGER · FINANCE), isActive, lastLogin, createdAt |
-| Project | id, name, clientName, code, hourlyRate, currency, assignedDmId (FK → User), status (ACTIVE · ON_HOLD · DELIVERED · ARCHIVED), showRateToDm (bool), createdAt |
+| User | id, name, email, passwordHash, role (SUPER_ADMIN · PRODUCT_OWNER · DELIVERY_MANAGER · FINANCE), isActive, phone, timezone, notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined, lastLogin, createdAt |
+| Project | id, name, clientName, clientEmail, code, hourlyRate, currency, assignedDmId (FK → User), status (ACTIVE · ON_HOLD · DELIVERED · ARCHIVED), showRateToDm (bool), createdAt |
 | ProjectAttachment | id, projectId, fileName, fileUrl, fileSize, uploadedAt |
 | ProjectUser | id, projectId, userId (join table for multi-project assignment) |
 | Invitation | id, email, projectId, role, token, expiresAt, usedAt |
@@ -323,6 +323,10 @@ All endpoints: `[METHOD] /api/v1/[resource]`. Response shape: `{ success, data, 
 | POST | /api/v1/auth/forgot-password | Send reset email | All |
 | POST | /api/v1/auth/reset-password | Reset password via token | All |
 | POST | /api/v1/auth/register | Register via invite token | PO |
+| GET | /api/v1/auth/me | Get current user profile | All (authenticated) |
+| PATCH | /api/v1/auth/me | Update profile (name, phone, timezone, notification prefs) | All (authenticated) |
+| POST | /api/v1/auth/me/change-password | Change own password | All (authenticated) |
+| GET | /api/v1/auth/me/stats | System-wide counts (users, projects, CRs) | Super Admin |
 | GET | /api/v1/users | List all users | Super Admin |
 | POST | /api/v1/users | Create user | Super Admin |
 | PATCH | /api/v1/users/:id | Update / deactivate user | Super Admin |
