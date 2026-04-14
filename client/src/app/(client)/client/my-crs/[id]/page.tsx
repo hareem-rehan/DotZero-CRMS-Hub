@@ -576,7 +576,6 @@ export default function CRDetailPage() {
                 Back
               </Button>
               <Button
-                variant="ghost"
                 onClick={() => cancelCR.mutate(cancelReason)}
                 loading={cancelCR.isPending}
                 disabled={!cancelReason.trim()}

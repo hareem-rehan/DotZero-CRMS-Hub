@@ -39,6 +39,7 @@ function ActionsMenu({
   onDelete: (row: Project) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,12 +50,23 @@ function ActionsMenu({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const handleOpen = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      // Flip upward if less than 200px below the button to the bottom of viewport
+      setDropUp(window.innerHeight - rect.bottom < 200);
+    }
+    setOpen((v) => !v);
+  };
+
   return (
     <div ref={ref} className="relative inline-block text-left">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleOpen}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label="Project actions"
         className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#D3D3D3] bg-white text-[#5D5B5B] hover:bg-[#F7F7F7] hover:border-[#2D2D2D] hover:text-[#2D2D2D] transition-colors"
-        title="Actions"
       >
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="5" r="1.5" />
@@ -64,10 +76,15 @@ function ActionsMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-1 w-44 rounded-xl border border-[#E5E5E5] bg-white shadow-lg py-1">
+        <div
+          role="menu"
+          aria-label="Project actions"
+          className={`absolute right-0 z-50 w-44 rounded-xl border border-[#E5E5E5] bg-white shadow-lg py-1 ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+        >
           {/* View */}
           <Link
             href={`/admin/projects/${row.id}`}
+            role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-3 py-2 text-sm text-[#2D2D2D] hover:bg-[#F7F7F7] transition-colors"
           >
@@ -81,6 +98,7 @@ function ActionsMenu({
           {/* Edit */}
           <Link
             href={`/admin/projects/${row.id}/edit`}
+            role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-3 py-2 text-sm text-[#2D2D2D] hover:bg-[#F7F7F7] transition-colors"
           >
@@ -94,6 +112,7 @@ function ActionsMenu({
 
           {/* Archive / Unarchive */}
           <button
+            role="menuitem"
             onClick={() => { setOpen(false); onArchive(row); }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-[#F7F7F7] transition-colors text-amber-700"
           >
@@ -105,6 +124,7 @@ function ActionsMenu({
 
           {/* Delete */}
           <button
+            role="menuitem"
             onClick={() => { setOpen(false); onDelete(row); }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
           >
