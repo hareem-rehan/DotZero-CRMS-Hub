@@ -22,8 +22,6 @@ const schema = z.object({
   businessJustification: z.string().optional(),
   priority: z.string().optional(),
   changeType: z.string().optional(),
-  requestingParty: z.string().optional(),
-  sowRef: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -72,8 +70,6 @@ export default function EditCRPage() {
       businessJustification: '',
       priority: 'MEDIUM',
       changeType: 'SCOPE',
-      requestingParty: '',
-      sowRef: '',
     },
   });
 
@@ -86,8 +82,6 @@ export default function EditCRPage() {
       businessJustification: cr.businessJustification,
       priority: cr.priority,
       changeType: cr.changeType,
-      requestingParty: cr.requestingParty,
-      sowRef: cr.sowRef ?? '',
     });
   }, [cr, reset]);
 
@@ -254,14 +248,6 @@ export default function EditCRPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Requesting Party"
-              placeholder="Who is requesting this change?"
-              {...register('requestingParty')}
-            />
-            <Input label="SOW Reference" placeholder="e.g. SOW-2024-001" {...register('sowRef')} />
-          </div>
         </div>
 
         {/* Details */}

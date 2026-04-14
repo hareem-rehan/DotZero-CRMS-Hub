@@ -290,6 +290,29 @@ export const unarchiveProject = async (id: string, actorId: string) => {
   return updated;
 };
 
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+export const deleteProject = async (id: string, actorId: string) => {
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: { _count: { select: { changeRequests: true } } },
+  });
+  if (!project) throw new AppError(404, 'Project not found');
+  if (project._count.changeRequests > 0) {
+    throw new AppError(400, 'Cannot delete a project that has change requests. Archive it instead.');
+  }
+
+  await prisma.project.delete({ where: { id } });
+
+  await createAuditLog({
+    event: 'PROJECT_DELETED',
+    actorId,
+    entityType: 'Project',
+    entityId: id,
+    metadata: { name: project.name },
+  });
+};
+
 // ─── Client Login Link ────────────────────────────────────────────────────────
 
 export const generateClientLoginLinks = async (projectId: string, actorId: string) => {

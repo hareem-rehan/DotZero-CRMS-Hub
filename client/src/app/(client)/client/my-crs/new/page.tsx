@@ -24,8 +24,6 @@ const schema = z.object({
   businessJustification: z.string().optional(),
   priority: z.string().optional(),
   changeType: z.string().optional(),
-  requestingParty: z.string().optional(),
-  sowRef: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -83,8 +81,6 @@ export default function NewCRPage() {
       businessJustification: '',
       priority: 'MEDIUM',
       changeType: 'SCOPE',
-      requestingParty: '',
-      sowRef: '',
     },
   });
 
@@ -116,8 +112,6 @@ export default function NewCRPage() {
       businessJustification: '',
       priority: 'MEDIUM',
       changeType: 'SCOPE',
-      requestingParty: '',
-      sowRef: '',
     });
   };
 
@@ -138,8 +132,6 @@ export default function NewCRPage() {
             businessJustification: formValues.businessJustification,
             priority: formValues.priority,
             changeType: formValues.changeType,
-            requestingParty: formValues.requestingParty,
-            sowRef: formValues.sowRef,
           },
           files,
         });
@@ -175,8 +167,6 @@ export default function NewCRPage() {
           businessJustification: values.businessJustification,
           priority: values.priority,
           changeType: values.changeType,
-          requestingParty: values.requestingParty,
-          sowRef: values.sowRef,
         },
         files,
       });
@@ -217,8 +207,6 @@ export default function NewCRPage() {
           businessJustification: values.businessJustification,
           priority: values.priority,
           changeType: values.changeType,
-          requestingParty: values.requestingParty,
-          sowRef: values.sowRef,
         });
       }
       await submitCR.mutateAsync(crId);
@@ -315,14 +303,6 @@ export default function NewCRPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Requesting Party"
-              placeholder="Who is requesting this change?"
-              {...register('requestingParty')}
-            />
-            <Input label="SOW Reference" placeholder="e.g. SOW-2024-001" {...register('sowRef')} />
-          </div>
         </div>
 
         {/* Description + Justification */}

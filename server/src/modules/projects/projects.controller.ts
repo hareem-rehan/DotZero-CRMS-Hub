@@ -94,6 +94,22 @@ export const unarchive = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
+export const deleteProject = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await projectsService.deleteProject(
+      req.params['id'] as string,
+      req.user?.userId as string,
+    );
+    res.json({ success: true, data: null, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const clientLoginLink = async (
   req: Request,
   res: Response,

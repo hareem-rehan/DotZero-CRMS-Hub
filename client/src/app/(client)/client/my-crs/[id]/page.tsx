@@ -102,7 +102,9 @@ export default function CRDetailPage() {
     onError: (msg) => toast.error(msg),
   });
 
-  // Cancel
+  // Cancel flow
+  const [showCancel, setShowCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const cancelCR = useCancelCR(id, {
     onSuccess: () => {
       toast.success('CR cancelled');
@@ -183,12 +185,7 @@ export default function CRDetailPage() {
             </>
           )}
           {isCancellable && !isDraft && !isEstimated && (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                if (confirm('Cancel this CR?')) cancelCR.mutate(undefined);
-              }}
-            >
+            <Button variant="ghost" onClick={() => setShowCancel(true)}>
               Cancel CR
             </Button>
           )}
@@ -546,6 +543,43 @@ export default function CRDetailPage() {
                 disabled={!declineNotes.trim()}
               >
                 Decline CR
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Cancel Modal ── */}
+      {showCancel && (
+        <Modal title="Cancel Change Request" onClose={() => setShowCancel(false)}>
+          <div className="space-y-4">
+            <p className="text-sm text-[#5D5B5B]">
+              Please provide a reason for cancelling <strong>{cr.crNumber}</strong>. This cannot be
+              undone.
+            </p>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Reason <span className="text-[#EF323F]">*</span>
+              </label>
+              <textarea
+                rows={4}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Explain why this CR is being cancelled…"
+                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setShowCancel(false)}>
+                Back
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => cancelCR.mutate(cancelReason)}
+                loading={cancelCR.isPending}
+                disabled={!cancelReason.trim()}
+              >
+                Confirm Cancel
               </Button>
             </div>
           </div>

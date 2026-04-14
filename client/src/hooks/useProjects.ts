@@ -201,3 +201,13 @@ export const useUnarchiveProject = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   });
 };
+
+export const useDeleteProject = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/projects/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+};
