@@ -293,6 +293,7 @@ export const unarchiveProject = async (id: string, actorId: string) => {
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export const deleteProject = async (id: string, actorId: string) => {
+  // Fetch + validate before entering the transaction
   const project = await prisma.project.findUnique({
     where: { id },
     include: { _count: { select: { changeRequests: true } } },
@@ -302,8 +303,13 @@ export const deleteProject = async (id: string, actorId: string) => {
     throw new AppError(400, 'Cannot delete a project that has change requests. Archive it instead.');
   }
 
-  await prisma.project.delete({ where: { id } });
+  // Wrap the delete in a transaction so it either fully succeeds or rolls back
+  await prisma.$transaction(async (tx) => {
+    await tx.project.delete({ where: { id } });
+  });
 
+  // Audit log is intentionally outside the transaction — it swallows its own
+  // errors so it must never be the reason a delete rolls back
   await createAuditLog({
     event: 'PROJECT_DELETED',
     actorId,
