@@ -100,10 +100,7 @@ export const deleteProject = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    await projectsService.deleteProject(
-      req.params['id'] as string,
-      req.user!.userId,
-    );
+    await projectsService.deleteProject(req.params['id'] as string, req.user!.userId);
     res.json({ success: true, data: null, error: null, meta: null });
   } catch (err) {
     next(err);

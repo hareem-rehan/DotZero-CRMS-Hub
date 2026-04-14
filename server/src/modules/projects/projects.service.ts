@@ -300,7 +300,10 @@ export const deleteProject = async (id: string, actorId: string) => {
   });
   if (!project) throw new AppError(404, 'Project not found');
   if (project._count.changeRequests > 0) {
-    throw new AppError(400, 'Cannot delete a project that has change requests. Archive it instead.');
+    throw new AppError(
+      400,
+      'Cannot delete a project that has change requests. Archive it instead.',
+    );
   }
 
   // Wrap the delete in a transaction so it either fully succeeds or rolls back

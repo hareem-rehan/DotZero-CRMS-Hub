@@ -193,8 +193,6 @@ export default function NewCRPage() {
             businessJustification: values.businessJustification,
             priority: values.priority,
             changeType: values.changeType,
-            requestingParty: values.requestingParty,
-            sowRef: values.sowRef,
           },
           files,
         });
@@ -302,7 +300,6 @@ export default function NewCRPage() {
               )}
             />
           </div>
-
         </div>
 
         {/* Description + Justification */}

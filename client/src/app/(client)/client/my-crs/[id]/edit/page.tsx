@@ -247,7 +247,6 @@ export default function EditCRPage() {
               )}
             />
           </div>
-
         </div>
 
         {/* Details */}

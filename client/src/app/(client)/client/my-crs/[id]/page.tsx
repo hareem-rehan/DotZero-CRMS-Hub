@@ -553,7 +553,13 @@ export default function CRDetailPage() {
 
       {/* ── Cancel Modal ── */}
       {showCancel && (
-        <Modal title="Cancel Change Request" onClose={() => { setShowCancel(false); setCancelReason(''); }}>
+        <Modal
+          title="Cancel Change Request"
+          onClose={() => {
+            setShowCancel(false);
+            setCancelReason('');
+          }}
+        >
           <div className="space-y-4">
             <p className="text-sm text-[#5D5B5B]">
               Please provide a reason for cancelling <strong>{cr.crNumber}</strong>. This cannot be
