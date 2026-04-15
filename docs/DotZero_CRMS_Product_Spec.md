@@ -1,6 +1,6 @@
 # DotZero Change Request Management System — Product Specification
 
-**Version:** 2.1 | **Date:** April 2026 | **Status:** Final | **Confidential — Internal Use Only**
+**Version:** 2.2 | **Date:** April 2026 | **Status:** Final | **Confidential — Internal Use Only**
 
 | Field | Value |
 |-------|-------|
@@ -137,7 +137,7 @@ The Super Admin is the system configurator. They manage all projects, users, and
 
 | # | Feature | Specification |
 |---|---------|--------------|
-| 1 | Create Project | Fields: Project Name, Client Name, Project Code (auto-generated or manual), Start Date, Hourly Rate, Currency, Status (Active / On Hold / Delivered). Assigned DM dropdown lists all DM + SA users. Checkbox: "Display hourly rate to DM" — controls DM financial visibility. |
+| 1 | Create Project | Fields: Project Name, Client Name, Project Code (auto-generated or manual), Start Date, Hourly Rate, Currency, Status (Draft / Active / On Hold / Delivered). Assigned DM dropdown lists all DM + SA users. Checkbox: "Display hourly rate to DM" — controls DM financial visibility. |
 | 2 | Project Attachments | SA can attach files (PDF, XLS, PNG, JPEG) at project level — e.g. SOW, BRD, WBS. Viewable by assigned DM and Client. |
 | 3 | Edit Project | All fields editable. Changing Hourly Rate does NOT retroactively affect already-approved CRs. |
 | 4 | Archive Project | Soft delete. All existing CRs remain intact and viewable. No new CRs can be raised. Shows as Inactive in listings. |
@@ -152,7 +152,7 @@ The Super Admin is the system configurator. They manage all projects, users, and
 | 2 | Edit User | Edit: Name, Role, Project assignments. Email is not editable (used as unique identifier). |
 | 3 | Deactivate / Reactivate User | Soft delete. Deactivated users cannot log in. Historical CRs show their name with "(Inactive)" label. Reactivation restores full access. |
 | 4 | Assign to Projects | Multi-select project assignment. Nice-to-have: "All Projects" toggle. |
-| 5 | User Listing | Table: Name, Email, Role, Status. Filterable by Role and Status. Actions: Edit, Deactivate/Reactivate, Delete (soft). |
+| 5 | User Listing | Table: Name, Email, Role, Status. Filterable by Status (Active/Inactive). All roles including Product Owner are visible. Actions: Edit, Deactivate/Reactivate, Delete (soft). |
 | 6 | Resend Welcome Email | Button to resend password setup link if user has not yet activated account. |
 | 7 | Reset User Password | SA can trigger password reset email for any user (useful for locked-out accounts). |
 | 8 | Duplicate Email Prevention | Email uniqueness validated at creation. Clear error shown if email already exists. |
@@ -168,7 +168,7 @@ The Product Owner initiates all Change Requests. They fill out the client-facing
 | # | Feature | Specification |
 |---|---------|--------------|
 | 1 | Create New CR | PO selects a project from their assigned projects. CR Number, SOW Reference, project details, and Date are auto-populated. |
-| 2 | PO-Editable Fields | Title, Description of Proposed Change (rich text), Business Justification, Priority (Critical / High / Medium / Low), Change Type (Scope / Timeline / Both), Requesting Party (auto-set, editable). |
+| 2 | PO-Editable Fields | Title, Description of Proposed Change (rich text), Business Justification, Priority (Critical / High / Medium / Low), Change Type (Scope / Timeline / Scope & Timeline), Requesting Party (auto-set, editable). |
 | 3 | File Attachments | Up to 5 files. Max 10 MB each. Accepted: PDF, DOCX, XLSX, PNG, JPG. Invalid files rejected with clear error message. |
 | 4 | Save as Draft | PO can save at any point without all required fields filled. Auto-saves every 60 seconds. Draft is only visible to PO and SA. |
 | 5 | Draft Validation on Submit | On submit: Description and Business Justification not empty, Priority and Change Type selected. Field-level errors shown inline. |
@@ -194,6 +194,7 @@ The Product Owner initiates all Change Requests. They fill out the client-facing
 | 4 | Search | Free-text search across CR Number and Description. |
 | 5 | Action Column | Context-aware: Draft → "Edit", Estimated → "Review & Decide", all others → "View". |
 | 6 | Pending Action Highlight | CRs with status = Estimated are visually highlighted (bold row or "Action Required" badge). |
+| 7 | Status History Role Tags | Each entry in the status history timeline shows the actor's name with a colour-coded role tag (PO · DM · SA · Finance) for quick identification. |
 
 ### 5.4 Client Signature on Approval
 
@@ -243,10 +244,11 @@ The Delivery Manager receives submitted CRs, fills out the effort estimation, ad
 
 | # | Feature | Specification |
 |---|---------|--------------|
-| 1 | Full History View | DM can view all CRs (all statuses) across their assigned projects — not just pending ones. |
+| 1 | Full History View | DM can view **all CRs across all statuses** on their assigned projects — including Approved, Declined, Completed, and Cancelled. No status restriction applies. |
 | 2 | Filters | Project, Status, Date Range, Priority. |
 | 3 | CR Detail — Read Only | Approved / Declined / Completed CRs are fully viewable but not editable. |
 | 4 | Internal Notes | DM can attach internal notes to any CR they are assigned to. Notes are visible only to DM and Super Admin. Notes show author name and timestamp. |
+| 5 | Status History Role Tags | Each entry in the status history timeline shows the actor's name with a colour-coded role tag (PO · DM · SA · Finance) for quick identification. |
 
 ---
 
@@ -269,8 +271,10 @@ Finance has a read-only, reporting-focused view. They can filter, view, and expo
 
 | # | Widget | Specification |
 |---|--------|--------------|
-| 1 | Monthly Summary Cards | This Month: Total Approved CRs, Total Hours Approved, Total Cost Approved. Comparison to previous month (% change). |
-| 2 | Project Breakdown Table | Per-project: # Approved CRs, Total Hours, Total Cost. Filterable by month / date range. Grouped by currency. |
+| 1 | Consolidated Summary Cards | This Month: Total Approved CRs, Total Hours Approved, Total Cost Approved (all projects consolidated into selected currency). Comparison to previous month (% change). Default currency: USD. |
+| 2 | Live Currency Conversion | A currency selector (USD / EUR / GBP / AED / PKR / SAR) converts all project costs into the selected currency using live exchange rates fetched from open.er-api.com (refreshed every hour). Fallback to original values if rates are unavailable. Status indicator shows "Live rates" / "Fetching rates…" / "Rates unavailable". |
+| 3 | Project Breakdown Table | Per-project: # Approved CRs, Total Hours, Original Cost (in project currency), Converted Cost (in selected currency). |
+| 4 | Filters | Project dropdown, Client dropdown, Date range (from / to). All filters combine and can be cleared with a single Reset button. |
 
 ### 7.3 Export
 
@@ -300,7 +304,7 @@ Every resubmission by the PO creates an immutable snapshot of the CR at that poi
 | Entity | Key Fields |
 |--------|-----------|
 | User | id, name, email, passwordHash, role (SUPER_ADMIN · PRODUCT_OWNER · DELIVERY_MANAGER · FINANCE), isActive, phone, timezone, notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined, lastLogin, createdAt |
-| Project | id, name, clientName, clientEmail, code, hourlyRate, currency, assignedDmId (FK → User), status (ACTIVE · ON_HOLD · DELIVERED · ARCHIVED), showRateToDm (bool), createdAt |
+| Project | id, name, clientName, clientEmail, code, hourlyRate, currency, assignedDmId (FK → User), status (DRAFT · ACTIVE · ON_HOLD · DELIVERED · ARCHIVED), showRateToDm (bool), createdAt |
 | ProjectAttachment | id, projectId, fileName, fileUrl, fileSize, uploadedAt |
 | ProjectUser | id, projectId, userId (join table for multi-project assignment) |
 | Invitation | id, email, projectId, role, token, expiresAt, usedAt |
