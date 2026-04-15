@@ -47,10 +47,11 @@ All status transitions are enforced server-side. Invalid transitions are rejecte
 | Draft | System (auto) | CR created by PO but not yet submitted. Auto-saves every 60s. | Submitted, Cancelled |
 | Submitted | Product Owner | PO submitted CR to DM. CR is read-only to PO. DM notified by email. | Under Review, Cancelled |
 | Under Review | Delivery Manager | DM has opened the CR. Status changes automatically when DM first opens a Submitted CR. | Estimated, Cancelled |
-| Estimated | Delivery Manager | DM has completed effort estimation and returned CR to PO for decision. | Approved, Declined, Resubmitted |
+| Estimated | Delivery Manager | DM has completed effort estimation and returned CR to PO for decision. | Approved, Declined, Deferred, Resubmitted |
 | Resubmitted | Product Owner | PO edited CR fields and re-sent to DM. New version (v2, v3…) created. Previous version archived. | Under Review |
 | Approved | Product Owner | PO accepted the estimate. CR locked. Finance can now see this CR. Client signature captured. | In Progress |
 | Declined | Product Owner | PO rejected estimate. Decline notes mandatory. DM notified with reason. | *(terminal)* |
+| Deferred | Product Owner | PO placed CR on hold for future review. Defer reason mandatory. | *(terminal)* |
 | In Progress | Delivery Manager | Implementation of the approved CR is underway. | Completed, Cancelled |
 | Completed | Delivery Manager | CR fully implemented and closed. | *(terminal)* |
 | Cancelled | SA or PO | CR withdrawn at any point before Completed. No further action possible. | *(terminal)* |
@@ -116,6 +117,7 @@ Every state change and key action is logged. Audit logs are insert-only (tamper-
 | 8 | User created / deactivated / reactivated | Actor (SA), affected user, role, timestamp |
 | 9 | Project created / edited / archived | Actor (SA), project details, timestamp |
 | 10 | Export generated | Exported by, filters applied, file type, timestamp |
+| 11 | CR deferred by PO | CR ID, PO, defer reason, timestamp |
 
 ---
 
@@ -345,6 +347,7 @@ All endpoints: `[METHOD] /api/v1/[resource]`. Response shape: `{ success, data, 
 | POST | /api/v1/change-requests/:id/impact-analysis | Submit DM estimation | DM |
 | POST | /api/v1/change-requests/:id/approve | PO approve + signature | PO |
 | POST | /api/v1/change-requests/:id/decline | PO decline | PO |
+| POST | /api/v1/change-requests/:id/defer | PO defer with mandatory reason | PO |
 | POST | /api/v1/change-requests/:id/resubmit | PO resubmit (new version) | PO |
 | POST | /api/v1/change-requests/:id/notes | Add internal note | DM, SA |
 | GET | /api/v1/change-requests/:id/versions | List CR versions | All (scoped) |

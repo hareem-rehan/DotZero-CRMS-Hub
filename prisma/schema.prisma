@@ -22,6 +22,7 @@ enum Role {
 }
 
 enum ProjectStatus {
+  DRAFT
   ACTIVE
   ON_HOLD
   DELIVERED
@@ -36,6 +37,7 @@ enum CRStatus {
   RESUBMITTED
   APPROVED
   DECLINED
+  DEFERRED
   IN_PROGRESS
   COMPLETED
   CANCELLED

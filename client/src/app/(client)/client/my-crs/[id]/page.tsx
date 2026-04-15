@@ -16,10 +16,35 @@ import {
   useSubmitCR,
   useApproveCR,
   useDeclineCR,
+  useDeferCR,
   useResubmitCR,
   useCancelCR,
   useCRVersions,
 } from '@/hooks/useCRs';
+
+// ─── Role label helper ────────────────────────────────────────────────────────
+
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: 'SA',
+  PRODUCT_OWNER: 'PO',
+  DELIVERY_MANAGER: 'DM',
+  FINANCE: 'Finance',
+};
+
+function RoleTag({ role }: { role: string }) {
+  const label = ROLE_LABEL[role] ?? role;
+  const colours: Record<string, string> = {
+    PO: 'bg-blue-100 text-blue-700',
+    DM: 'bg-amber-100 text-amber-700',
+    SA: 'bg-purple-100 text-purple-700',
+    Finance: 'bg-green-100 text-green-700',
+  };
+  return (
+    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${colours[label] ?? 'bg-gray-100 text-gray-600'}`}>
+      {label}
+    </span>
+  );
+}
 
 // ─── Modals ───────────────────────────────────────────────────────────────────
 
@@ -89,6 +114,18 @@ export default function CRDetailPage() {
     onError: (msg) => toast.error(msg),
   });
 
+  // Defer flow
+  const [showDefer, setShowDefer] = useState(false);
+  const [deferReason, setDeferReason] = useState('');
+  const deferCR = useDeferCR(id, {
+    onSuccess: () => {
+      toast.success('CR deferred');
+      setShowDefer(false);
+      setDeferReason('');
+    },
+    onError: (msg) => toast.error(msg),
+  });
+
   // Resubmit flow
   const [showResubmit, setShowResubmit] = useState(false);
   const [resubTitle, setResubTitle] = useState('');
@@ -150,6 +187,9 @@ export default function CRDetailPage() {
     );
 
   const isEstimated = cr.status === 'ESTIMATED';
+  const isApproved = cr.status === 'APPROVED';
+  const isDeclined = cr.status === 'DECLINED';
+  const isDeferred = cr.status === 'DEFERRED';
   const isDraft = cr.status === 'DRAFT';
   const isCancellable = !['APPROVED', 'DECLINED', 'CANCELLED', 'COMPLETED'].includes(cr.status);
 
@@ -171,7 +211,7 @@ export default function CRDetailPage() {
                 Edit Draft
               </Button>
               <Button onClick={() => setConfirmSubmit(true)} loading={submitCR.isPending}>
-                Submit for Review
+                Submit for Estimation
               </Button>
             </>
           )}
@@ -180,11 +220,29 @@ export default function CRDetailPage() {
               <Button variant="secondary" onClick={() => setShowDecline(true)}>
                 Decline
               </Button>
+              <Button variant="secondary" onClick={() => setShowDefer(true)}>
+                Defer
+              </Button>
               <Button variant="secondary" onClick={openResubmit}>
                 Resubmit
               </Button>
               <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
             </>
+          )}
+          {isApproved && (
+            <Button variant="secondary" onClick={openResubmit}>
+              Resubmit CR
+            </Button>
+          )}
+          {isDeclined && (
+            <Button variant="secondary" onClick={openResubmit}>
+              Resubmit CR
+            </Button>
+          )}
+          {isDeferred && (
+            <Button variant="secondary" onClick={openResubmit}>
+              Resubmit CR
+            </Button>
           )}
           {isCancellable && !isDraft && !isEstimated && (
             <Button variant="ghost" onClick={() => setShowCancel(true)}>
@@ -375,15 +433,82 @@ export default function CRDetailPage() {
           {/* Approval result */}
           {cr.approval && (
             <div className="rounded-xl border border-green-200 bg-green-50 p-6">
-              <h3 className="mb-2 text-sm font-semibold text-green-800">Approved</h3>
-              {cr.approval.decisionNote && (
-                <p className="text-sm text-green-700">{cr.approval.decisionNote}</p>
-              )}
-              <p className="mt-1 text-xs text-green-600">
-                {new Date(cr.approval.decidedAt).toLocaleDateString()}
-              </p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-green-800">Approved</h3>
+                  {cr.approval.approvalNotes && (
+                    <p className="text-sm text-green-700">{cr.approval.approvalNotes}</p>
+                  )}
+                  <p className="mt-1 text-xs text-green-600">
+                    {new Date(cr.approval.approvedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                {isApproved && (
+                  <Button variant="secondary" onClick={openResubmit} className="shrink-0">
+                    Resubmit CR
+                  </Button>
+                )}
+              </div>
             </div>
           )}
+
+          {/* Deferred result */}
+          {isDeferred && (() => {
+            const deferEntry = [...(cr.statusHistory ?? [])]
+              .reverse()
+              .find((h) => h.toStatus === 'DEFERRED');
+            return (
+              <div className="rounded-xl border border-purple-200 bg-purple-50 p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-purple-800">Deferred</h3>
+                    {deferEntry?.note && (
+                      <p className="text-sm text-purple-700">{deferEntry.note}</p>
+                    )}
+                    {deferEntry && (
+                      <p className="mt-1 text-xs text-purple-600 flex items-center">
+                        {new Date(deferEntry.changedAt).toLocaleDateString()} ·{' '}
+                        {deferEntry.changedBy.name}
+                        <RoleTag role={deferEntry.changedBy.role} />
+                      </p>
+                    )}
+                  </div>
+                  <Button variant="secondary" onClick={openResubmit} className="shrink-0">
+                    Resubmit CR
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Declined result */}
+          {isDeclined && (() => {
+            const declineEntry = [...(cr.statusHistory ?? [])]
+              .reverse()
+              .find((h) => h.toStatus === 'DECLINED');
+            return (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-red-800">Declined</h3>
+                    {declineEntry?.note && (
+                      <p className="text-sm text-red-700">{declineEntry.note}</p>
+                    )}
+                    {declineEntry && (
+                      <p className="mt-1 text-xs text-red-600 flex items-center">
+                        {new Date(declineEntry.changedAt).toLocaleDateString()} ·{' '}
+                        {declineEntry.changedBy.name}
+                        <RoleTag role={declineEntry.changedBy.role} />
+                      </p>
+                    )}
+                  </div>
+                  <Button variant="secondary" onClick={openResubmit} className="shrink-0">
+                    Resubmit CR
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Sidebar */}
@@ -424,8 +549,9 @@ export default function CRDetailPage() {
                 {cr.statusHistory.map((h) => (
                   <li key={h.id} className="mb-4 ml-4">
                     <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full border border-white bg-[#EF323F]" />
-                    <div className="text-xs text-[#5D5B5B]">
+                    <div className="text-xs text-[#5D5B5B] flex items-center">
                       {new Date(h.changedAt).toLocaleDateString()} · {h.changedBy.name}
+                      <RoleTag role={h.changedBy.role} />
                     </div>
                     <div className="mt-0.5 flex items-center gap-1 text-sm">
                       <CRStatusBadge status={h.fromStatus} />
@@ -551,6 +677,54 @@ export default function CRDetailPage() {
         </Modal>
       )}
 
+      {/* ── Defer Modal ── */}
+      {showDefer && (
+        <Modal
+          title="Defer Change Request"
+          onClose={() => {
+            setShowDefer(false);
+            setDeferReason('');
+          }}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-[#5D5B5B]">
+              Please provide a reason for deferring <strong>{cr.crNumber}</strong>. The CR will be
+              placed on hold for future review.
+            </p>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Reason <span className="text-[#EF323F]">*</span>
+              </label>
+              <textarea
+                rows={4}
+                value={deferReason}
+                onChange={(e) => setDeferReason(e.target.value)}
+                placeholder="Explain why this CR is being deferred…"
+                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDefer(false);
+                  setDeferReason('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => deferCR.mutate(deferReason)}
+                loading={deferCR.isPending}
+                disabled={!deferReason.trim()}
+              >
+                Defer CR
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* ── Cancel Modal ── */}
       {showCancel && (
         <Modal
@@ -600,6 +774,14 @@ export default function CRDetailPage() {
           onClose={() => setShowResubmit(false)}
         >
           <div className="space-y-4">
+            {(isApproved || isDeclined || isDeferred) && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                This CR is currently{' '}
+                <strong>{isApproved ? 'Approved' : isDeclined ? 'Declined' : 'Deferred'}</strong>.
+                Resubmitting will create a new version and send it back to the Delivery Manager
+                for re-estimation with your updated changes.
+              </div>
+            )}
             <p className="text-sm text-[#5D5B5B]">
               Edit the fields below and resubmit. A version snapshot will be saved before changes.
             </p>

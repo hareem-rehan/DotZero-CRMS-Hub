@@ -104,6 +104,21 @@ export const decline = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
+export const defer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { deferReason } = req.body;
+    const cr = await crService.deferCR(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+      deferReason,
+    );
+    res.json({ success: true, data: cr, error: null, meta: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const resubmit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const cr = await crService.resubmitCR(

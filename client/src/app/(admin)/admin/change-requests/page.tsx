@@ -17,6 +17,7 @@ const STATUS_OPTIONS = [
   { value: 'ESTIMATED', label: 'Estimated' },
   { value: 'APPROVED', label: 'Approved' },
   { value: 'DECLINED', label: 'Declined' },
+  { value: 'DEFERRED', label: 'Deferred' },
   { value: 'RESUBMITTED', label: 'Resubmitted' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'COMPLETED', label: 'Completed' },

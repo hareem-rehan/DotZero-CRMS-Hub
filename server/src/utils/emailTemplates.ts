@@ -60,13 +60,21 @@ export const welcomeEmail = (name: string, setupUrl: string) => ({
 });
 
 export const inviteEmail = (email: string, registerUrl: string, projectName: string) => ({
-  subject: `You've been invited to the DotZero CR Portal`,
+  subject: `You've been invited to DotZero CR Portal — Set up your account`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">You've been invited!</h2>
-    <p style="color:#5D5B5B;font-size:14px">You've been invited to collaborate on project <strong>${projectName}</strong> via the DotZero CR Portal.</p>
-    <p style="color:#5D5B5B;font-size:13px">This invite link expires in <strong>72 hours</strong> and is single-use.</p>
-    ${btn('Accept Invitation', registerUrl)}
-    <p style="font-size:12px;color:#5D5B5B;text-align:center">Invitation sent to: ${email}</p>
+    <p style="color:#5D5B5B;font-size:14px">You have been added as a <strong>Product Owner</strong> on project <strong>${projectName}</strong> in the DotZero CR Portal.</p>
+    <div style="background:#F7F7F7;border-radius:6px;padding:12px 16px;margin:16px 0;font-size:13px">
+      <p style="margin:0 0 6px;color:#2D2D2D"><strong>What to do next:</strong></p>
+      <ol style="margin:0;padding-left:18px;color:#5D5B5B;line-height:1.8">
+        <li>Click the button below to set up your account</li>
+        <li>Enter your name and choose a password</li>
+        <li>Log in and start submitting change requests</li>
+      </ol>
+    </div>
+    <p style="color:#EF323F;font-size:13px;text-align:center">⏳ This link expires in <strong>72 hours</strong> and is single-use.</p>
+    ${btn('Set Up My Account & Password', registerUrl)}
+    <p style="font-size:12px;color:#5D5B5B;text-align:center">Invited email: ${email}</p>
   `),
 });
 
@@ -198,6 +206,24 @@ export const dmAssignedEmail = (dmName: string, projectName: string, portalUrl: 
     <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, you have been assigned as the Delivery Manager for project <strong>${projectName}</strong>.</p>
     <p style="color:#5D5B5B;font-size:14px">Log in to your portal to view the project's pending change requests.</p>
     ${btn('Go to DM Portal', portalUrl)}
+  `),
+});
+
+export const projectAssignedEmail = (
+  poName: string,
+  projectName: string,
+  newCrUrl: string,
+) => ({
+  subject: `New project assigned — ${projectName}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">New Project Assigned</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${poName}, a new project has been assigned to you on the DotZero CR Portal.</p>
+    <div style="background:#F7F7F7;border-radius:6px;padding:12px 16px;margin:16px 0;font-size:13px">
+      <span style="color:#5D5B5B">Project: </span><strong>${projectName}</strong>
+    </div>
+    <p style="color:#5D5B5B;font-size:14px">You can now submit change requests for this project directly from your portal.</p>
+    ${btn('Create a Change Request', newCrUrl)}
+    <p style="font-size:12px;color:#5D5B5B;text-align:center">If you have any questions, please reach out to your Delivery Manager.</p>
   `),
 });
 

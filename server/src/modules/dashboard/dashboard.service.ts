@@ -189,7 +189,12 @@ export const getFinanceCRById = async (id: string) => {
 
 // ─── Finance Dashboard: Monthly summary ──────────────────────────────────────
 
-export const getFinanceDashboard = async (dateFrom?: string, dateTo?: string) => {
+export const getFinanceDashboard = async (
+  dateFrom?: string,
+  dateTo?: string,
+  projectId?: string,
+  clientName?: string,
+) => {
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -200,9 +205,15 @@ export const getFinanceDashboard = async (dateFrom?: string, dateTo?: string) =>
 
   const approvedStatuses = { in: ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] as CRStatus[] };
 
+  // Extra filters for project / client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const extraWhere: Record<string, any> = {};
+  if (projectId) extraWhere.projectId = projectId;
+  if (clientName) extraWhere.project = { clientName: { contains: clientName, mode: 'insensitive' } };
+
   const [thisPeriodCRs, lastMonthCRs, projectBreakdown] = await Promise.all([
     prisma.changeRequest.findMany({
-      where: { status: approvedStatuses, dateOfRequest: { gte: rangeStart, lte: rangeEnd } },
+      where: { status: approvedStatuses, dateOfRequest: { gte: rangeStart, lte: rangeEnd }, ...extraWhere },
       include: {
         project: { select: { hourlyRate: true, currency: true, name: true, code: true } },
         impactAnalysis: { select: { estimatedHours: true } },
@@ -212,6 +223,7 @@ export const getFinanceDashboard = async (dateFrom?: string, dateTo?: string) =>
       where: {
         status: approvedStatuses,
         dateOfRequest: { gte: lastMonthStart, lte: lastMonthEnd },
+        ...extraWhere,
       },
       include: {
         project: { select: { name: true, code: true, hourlyRate: true, currency: true } },
@@ -219,7 +231,7 @@ export const getFinanceDashboard = async (dateFrom?: string, dateTo?: string) =>
       },
     }),
     prisma.changeRequest.findMany({
-      where: { status: approvedStatuses, dateOfRequest: { gte: rangeStart, lte: rangeEnd } },
+      where: { status: approvedStatuses, dateOfRequest: { gte: rangeStart, lte: rangeEnd }, ...extraWhere },
       include: {
         project: {
           select: {
@@ -369,5 +381,63 @@ export const getSADashboard = async () => {
         ? Math.floor((Date.now() - new Date(cr.dateOfRequest).getTime()) / 3600000)
         : null,
     })),
+  };
+};
+
+// ─── PO Dashboard ─────────────────────────────────────────────────────────────
+
+export const getPODashboard = async (userId: string) => {
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const allCRs = await prisma.changeRequest.findMany({
+    where: { submittedById: userId },
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
+      dateOfRequest: true,
+      project: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const total = allCRs.length;
+  const pending = allCRs.filter((cr) =>
+    ['SUBMITTED', 'UNDER_REVIEW', 'ESTIMATED', 'RESUBMITTED'].includes(cr.status),
+  ).length;
+  const approvedThisMonth = allCRs.filter(
+    (cr) => cr.status === 'APPROVED' && new Date(cr.createdAt) >= thisMonthStart,
+  ).length;
+  const declinedOrDeferred = allCRs.filter((cr) =>
+    ['DECLINED', 'DEFERRED'].includes(cr.status),
+  ).length;
+
+  // Monthly breakdown — last 6 months
+  const months: Record<
+    string,
+    { month: string; total: number; approved: number; pending: number; declined: number }
+  > = {};
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+    months[key] = { month: label, total: 0, approved: 0, pending: 0, declined: 0 };
+  }
+
+  for (const cr of allCRs) {
+    const d = new Date(cr.createdAt);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!months[key]) continue;
+    months[key].total += 1;
+    if (cr.status === 'APPROVED') months[key].approved += 1;
+    else if (['SUBMITTED', 'UNDER_REVIEW', 'ESTIMATED', 'RESUBMITTED'].includes(cr.status))
+      months[key].pending += 1;
+    else if (['DECLINED', 'DEFERRED'].includes(cr.status)) months[key].declined += 1;
+  }
+
+  return {
+    summary: { total, pending, approvedThisMonth, declinedOrDeferred },
+    monthly: Object.values(months),
   };
 };

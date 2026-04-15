@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { ProjectStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { createAuditLog } from '../../utils/auditLog';
 import { uploadToS3 } from '../../utils/fileUpload';
@@ -112,11 +113,11 @@ export const createProject = async (
   const project = await prisma.project.create({
     data: {
       name: input.name,
-      clientName: input.clientName,
+      clientName: input.clientName ?? '',
       code,
-      hourlyRate: input.hourlyRate,
+      hourlyRate: input.hourlyRate ?? 0,
       currency: input.currency ?? 'USD',
-      status: input.status ?? 'ACTIVE',
+      status: (input.status ?? 'ACTIVE') as ProjectStatus,
       startDate: input.startDate ? new Date(input.startDate) : null,
       assignedDmId: input.assignedDmId ?? null,
       showRateToDm: input.showRateToDm ?? false,
@@ -160,11 +161,14 @@ export const createProject = async (
   }
 
   // Auto-invite clientEmail + all clientMemberEmails as PRODUCT_OWNER
-  const inviteTargets = new Set<string>();
-  if (input.clientEmail) inviteTargets.add(input.clientEmail.toLowerCase());
-  (input.clientMemberEmails ?? []).forEach((e) => inviteTargets.add(e.toLowerCase()));
-  for (const email of inviteTargets) {
-    await sendInvitationIfNotExists(email, project.id, actorId);
+  // Skip invitations for DRAFT projects — they will be sent when the project is published
+  if (project.status !== ProjectStatus.DRAFT) {
+    const inviteTargets = new Set<string>();
+    if (input.clientEmail) inviteTargets.add(input.clientEmail.toLowerCase());
+    (input.clientMemberEmails ?? []).forEach((e) => inviteTargets.add(e.toLowerCase()));
+    for (const email of inviteTargets) {
+      await sendInvitationIfNotExists(email, project.id, actorId);
+    }
   }
 
   return project;

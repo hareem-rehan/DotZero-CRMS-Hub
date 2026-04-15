@@ -4,7 +4,7 @@ import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
 import { sendEmail } from '../../utils/email';
-import { inviteEmail } from '../../utils/emailTemplates';
+import { inviteEmail, projectAssignedEmail } from '../../utils/emailTemplates';
 import type { CreateInvitationInput } from './invitations.validation';
 
 const INVITE_TOKEN_EXPIRY_MS = 72 * 60 * 60 * 1000; // 72 hours
@@ -75,29 +75,58 @@ export const sendInvitation = async (input: CreateInvitationInput, actorId: stri
 };
 
 /**
- * Send a PRODUCT_OWNER invitation silently — skips if:
- * - active invitation already exists for this email + project
- * - user already exists and is already assigned to the project
+ * Assign a PRODUCT_OWNER to a project silently — handles two cases:
+ * 1. User already registered → create ProjectUser assignment directly (no invite needed)
+ * 2. User not yet registered → send invitation so they can register and get assigned
+ *
+ * Skips silently if:
+ * - active invitation already pending for this email + project
+ * - user already assigned to this project
  */
 export const sendInvitationIfNotExists = async (
   email: string,
   projectId: string,
   actorId: string,
 ): Promise<void> => {
-  // Skip if active invitation already pending
-  const existingInvite = await prisma.invitation.findFirst({
-    where: { email, projectId, usedAt: null, expiresAt: { gt: new Date() } },
-  });
-  if (existingInvite) return;
-
-  // Skip if a PO with this email already exists and is assigned to this project
+  // Case 1: User already exists as a PRODUCT_OWNER
   const existingUser = await prisma.user.findFirst({ where: { email, role: 'PRODUCT_OWNER' } });
   if (existingUser) {
     const assignment = await prisma.projectUser.findUnique({
       where: { projectId_userId: { projectId, userId: existingUser.id } },
     });
-    if (assignment) return;
+    if (assignment) return; // Already assigned — nothing to do
+
+    // Registered PO not yet on this project → assign directly, no invitation needed
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true },
+    });
+
+    await prisma.projectUser.create({ data: { projectId, userId: existingUser.id } });
+
+    await createAuditLog({
+      event: 'PROJECT_MEMBER_ADDED',
+      actorId,
+      entityType: 'Project',
+      entityId: projectId,
+      metadata: { email, userId: existingUser.id, method: 'auto-assign' },
+    });
+
+    // Notify the PO that a new project has been assigned to them
+    if (project) {
+      const newCrUrl = `${env.CLIENT_URL}/login?redirect=${encodeURIComponent('/client/my-crs/new')}`;
+      const tpl = projectAssignedEmail(existingUser.name, project.name, newCrUrl);
+      await sendEmail(existingUser.email, tpl.subject, tpl.html).catch(() => {});
+    }
+
+    return;
   }
+
+  // Case 2: User not yet registered — skip if active invitation already pending
+  const existingInvite = await prisma.invitation.findFirst({
+    where: { email, projectId, usedAt: null, expiresAt: { gt: new Date() } },
+  });
+  if (existingInvite) return;
 
   await sendInvitation({ email, projectId, role: 'PRODUCT_OWNER' }, actorId);
 };
