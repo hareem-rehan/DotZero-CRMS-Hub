@@ -1,17 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service';
-import { sendEmail } from '../../utils/email';
-import { passwordResetEmail } from '../../utils/emailTemplates';
-import { env } from '../../config/env';
 
 export const authController = {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await authService.login(
-        req.body,
-        req.ip,
-        req.headers['user-agent'],
-      );
+      const result = await authService.login(req.body, req.ip, req.headers['user-agent']);
       res.json({ success: true, data: result, error: null, meta: null });
     } catch (err) {
       next(err);
@@ -40,7 +33,9 @@ export const authController = {
     try {
       const { token } = req.body;
       if (!token) {
-        res.status(400).json({ success: false, data: null, error: 'Token is required', meta: null });
+        res
+          .status(400)
+          .json({ success: false, data: null, error: 'Token is required', meta: null });
         return;
       }
       const result = await authService.magicLogin(token);
@@ -70,8 +65,24 @@ export const authController = {
 
   async updateMe(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, phone, timezone, notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined } = req.body;
-      const user = await authService.updateMe(req.user!.userId, { name, phone, timezone, notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined });
+      const {
+        name,
+        phone,
+        timezone,
+        notifyOnCrSubmitted,
+        notifyOnCrReturned,
+        notifyOnCrApproved,
+        notifyOnCrDeclined,
+      } = req.body;
+      const user = await authService.updateMe(req.user!.userId, {
+        name,
+        phone,
+        timezone,
+        notifyOnCrSubmitted,
+        notifyOnCrReturned,
+        notifyOnCrApproved,
+        notifyOnCrDeclined,
+      });
       res.json({ success: true, data: user, error: null, meta: null });
     } catch (err) {
       next(err);
@@ -81,7 +92,11 @@ export const authController = {
   async changePassword(req: Request, res: Response, next: NextFunction) {
     try {
       const { currentPassword, newPassword } = req.body;
-      const result = await authService.changePassword(req.user!.userId, currentPassword, newPassword);
+      const result = await authService.changePassword(
+        req.user!.userId,
+        currentPassword,
+        newPassword,
+      );
       res.json({ success: true, data: result, error: null, meta: null });
     } catch (err) {
       next(err);

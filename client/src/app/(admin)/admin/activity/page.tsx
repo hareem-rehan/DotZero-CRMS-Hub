@@ -97,19 +97,24 @@ export default function AdminActivityPage() {
   return (
     <PageWrapper title="Admin Activity">
       <div className="space-y-4">
-
         {/* Filters */}
         <div className="flex flex-wrap gap-3 rounded-xl border border-[#E5E5E5] bg-white px-5 py-3 shadow-sm">
           <input
             type="text"
             placeholder="Search actor or event…"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-52"
           />
           <select
             value={entityType}
-            onChange={(e) => { setEntityType(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setEntityType(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
           >
             <option value="">All Types</option>
@@ -122,30 +127,46 @@ export default function AdminActivityPage() {
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
           />
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setDateTo(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
           />
           {(search || entityType || dateFrom || dateTo) && (
             <button
-              onClick={() => { setSearch(''); setEntityType(''); setDateFrom(''); setDateTo(''); setPage(1); }}
+              onClick={() => {
+                setSearch('');
+                setEntityType('');
+                setDateFrom('');
+                setDateTo('');
+                setPage(1);
+              }}
               className="rounded-lg border border-[#D3D3D3] px-3 py-1.5 text-sm text-[#5D5B5B] hover:bg-[#F7F7F7]"
             >
               Clear
             </button>
           )}
-          <span className="ml-auto self-center text-sm text-[#5D5B5B]">{data?.total ?? 0} entries</span>
+          <span className="ml-auto self-center text-sm text-[#5D5B5B]">
+            {data?.total ?? 0} entries
+          </span>
         </div>
 
         {/* Activity feed */}
         <div className="rounded-xl border border-[#E5E5E5] bg-white shadow-sm">
           {isLoading ? (
-            <div className="flex h-40 items-center justify-center text-sm text-[#5D5B5B]">Loading…</div>
+            <div className="flex h-40 items-center justify-center text-sm text-[#5D5B5B]">
+              Loading…
+            </div>
           ) : logs.length === 0 ? (
             <div className="px-6 py-10 text-center text-sm text-[#5D5B5B]">No activity found.</div>
           ) : (
@@ -167,7 +188,9 @@ export default function AdminActivityPage() {
                       {new Date(entry.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${ENTITY_COLORS[entry.entityType] ?? 'bg-[#F3F0E8] text-[#5D5B5B]'}`}>
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${ENTITY_COLORS[entry.entityType] ?? 'bg-[#F3F0E8] text-[#5D5B5B]'}`}
+                  >
                     {entry.entityType}
                   </span>
                 </div>
@@ -179,7 +202,9 @@ export default function AdminActivityPage() {
         {/* Pagination */}
         {(data?.totalPages ?? 0) > 1 && (
           <div className="flex items-center justify-between text-sm text-[#5D5B5B]">
-            <span>Page {page} of {data?.totalPages}</span>
+            <span>
+              Page {page} of {data?.totalPages}
+            </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -198,7 +223,6 @@ export default function AdminActivityPage() {
             </div>
           </div>
         )}
-
       </div>
     </PageWrapper>
   );

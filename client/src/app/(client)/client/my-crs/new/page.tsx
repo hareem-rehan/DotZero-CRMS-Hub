@@ -24,8 +24,6 @@ const schema = z.object({
   businessJustification: z.string().optional(),
   priority: z.string().optional(),
   changeType: z.string().optional(),
-  requestingParty: z.string().optional(),
-  sowRef: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -67,7 +65,14 @@ export default function NewCRPage() {
   const createCR = useCreateCR();
   const submitCR = useSubmitCR();
 
-  const { control, register, handleSubmit, watch, reset, formState: { errors, isDirty } } = useForm<FormValues>({
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       projectId: '',
@@ -76,8 +81,6 @@ export default function NewCRPage() {
       businessJustification: '',
       priority: 'MEDIUM',
       changeType: 'SCOPE',
-      requestingParty: '',
-      sowRef: '',
     },
   });
 
@@ -109,8 +112,6 @@ export default function NewCRPage() {
       businessJustification: '',
       priority: 'MEDIUM',
       changeType: 'SCOPE',
-      requestingParty: '',
-      sowRef: '',
     });
   };
 
@@ -131,8 +132,6 @@ export default function NewCRPage() {
             businessJustification: formValues.businessJustification,
             priority: formValues.priority,
             changeType: formValues.changeType,
-            requestingParty: formValues.requestingParty,
-            sowRef: formValues.sowRef,
           },
           files,
         });
@@ -168,8 +167,6 @@ export default function NewCRPage() {
           businessJustification: values.businessJustification,
           priority: values.priority,
           changeType: values.changeType,
-          requestingParty: values.requestingParty,
-          sowRef: values.sowRef,
         },
         files,
       });
@@ -196,8 +193,6 @@ export default function NewCRPage() {
             businessJustification: values.businessJustification,
             priority: values.priority,
             changeType: values.changeType,
-            requestingParty: values.requestingParty,
-            sowRef: values.sowRef,
           },
           files,
         });
@@ -210,8 +205,6 @@ export default function NewCRPage() {
           businessJustification: values.businessJustification,
           priority: values.priority,
           changeType: values.changeType,
-          requestingParty: values.requestingParty,
-          sowRef: values.sowRef,
         });
       }
       await submitCR.mutateAsync(crId);
@@ -307,19 +300,6 @@ export default function NewCRPage() {
               )}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Requesting Party"
-              placeholder="Who is requesting this change?"
-              {...register('requestingParty')}
-            />
-            <Input
-              label="SOW Reference"
-              placeholder="e.g. SOW-2024-001"
-              {...register('sowRef')}
-            />
-          </div>
         </div>
 
         {/* Description + Justification */}
@@ -358,11 +338,7 @@ export default function NewCRPage() {
         {/* Attachments */}
         <div className="rounded-lg border border-[#D3D3D3] bg-white p-6">
           <h2 className="mb-4 text-sm font-semibold text-[#2D2D2D]">Attachments</h2>
-          <FileUpload
-            files={files}
-            onFilesChange={setFiles}
-            label="Supporting documents"
-          />
+          <FileUpload files={files} onFilesChange={setFiles} label="Supporting documents" />
         </div>
 
         {/* Error */}
@@ -376,10 +352,21 @@ export default function NewCRPage() {
             Cancel
           </Button>
           <div className="flex gap-3">
-            <Button variant="secondary" type="button" onClick={onSaveDraft} loading={createCR.isPending && !submitCR.isPending} disabled={isLoading}>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={onSaveDraft}
+              loading={createCR.isPending && !submitCR.isPending}
+              disabled={isLoading}
+            >
               Save Draft
             </Button>
-            <Button type="button" onClick={onSubmit} loading={submitCR.isPending} disabled={isLoading}>
+            <Button
+              type="button"
+              onClick={onSubmit}
+              loading={submitCR.isPending}
+              disabled={isLoading}
+            >
               Submit for Review
             </Button>
           </div>

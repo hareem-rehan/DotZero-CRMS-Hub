@@ -25,10 +25,7 @@ export function RichTextEditor({
   minHeight = '120px',
 }: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder }),
-    ],
+    extensions: [StarterKit, Placeholder.configure({ placeholder })],
     content: value,
     editable: !readOnly,
     immediatelyRender: false,
@@ -93,11 +90,7 @@ export function RichTextEditor({
             </ToolbarBtn>
           </div>
         )}
-        <EditorContent
-          editor={editor}
-          className="px-3 py-2.5 outline-none"
-          style={{ minHeight }}
-        />
+        <EditorContent editor={editor} className="px-3 py-2.5 outline-none" style={{ minHeight }} />
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <style>{`

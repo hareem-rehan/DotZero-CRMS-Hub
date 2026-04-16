@@ -38,7 +38,8 @@ export const saveImpactAnalysis = async (
   if (cr.project.assignedDmId && cr.project.assignedDmId !== actorId) {
     // Allow SUPER_ADMIN through regardless
     const actor = await prisma.user.findUnique({ where: { id: actorId }, select: { role: true } });
-    if (actor?.role !== 'SUPER_ADMIN') throw new AppError(403, 'Only the assigned DM can estimate this CR');
+    if (actor?.role !== 'SUPER_ADMIN')
+      throw new AppError(403, 'Only the assigned DM can estimate this CR');
   }
 
   // When submitting final (isDraft=false), signature is required
@@ -89,9 +90,18 @@ export const saveImpactAnalysis = async (
 
     // Email PO (respects notifyOnCrReturned preference)
     if (cr.submittedBy?.email) {
-      const po = await prisma.user.findUnique({ where: { id: cr.submittedBy.id }, select: { notifyOnCrReturned: true } });
+      const po = await prisma.user.findUnique({
+        where: { id: cr.submittedBy.id },
+        select: { notifyOnCrReturned: true },
+      });
       if (po?.notifyOnCrReturned) {
-        const tpl = estimationReturnedEmail(cr.submittedBy.name, cr.crNumber, cr.project.name, crId, Number(input.estimatedHours));
+        const tpl = estimationReturnedEmail(
+          cr.submittedBy.name,
+          cr.crNumber,
+          cr.project.name,
+          crId,
+          Number(input.estimatedHours),
+        );
         await sendEmail(cr.submittedBy.email, tpl.subject, tpl.html).catch(() => {});
       }
     }

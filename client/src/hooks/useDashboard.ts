@@ -42,7 +42,16 @@ export interface FinanceCRListResult {
 export interface FinanceDashboardData {
   thisPeriod: Array<{ currency: string; count: number; hours: number; cost: number }>;
   lastMonth: Array<{ currency: string; count: number; hours: number; cost: number }>;
-  projectBreakdown: Array<{ projectId: string; projectName: string; projectCode: string; clientName: string | null; currency: string; count: number; hours: number; cost: number }>;
+  projectBreakdown: Array<{
+    projectId: string;
+    projectName: string;
+    projectCode: string;
+    clientName: string | null;
+    currency: string;
+    count: number;
+    hours: number;
+    cost: number;
+  }>;
 }
 
 export interface SADashboardData {
@@ -52,7 +61,14 @@ export interface SADashboardData {
   thisMonthCost: number;
   lastMonthCost: number;
   costChangePercent: number | null;
-  pendingActions: Array<{ id: string; crNumber: string; projectName: string; submittedBy: string; dateOfRequest: string | null; hoursStuck: number | null }>;
+  pendingActions: Array<{
+    id: string;
+    crNumber: string;
+    projectName: string;
+    submittedBy: string;
+    dateOfRequest: string | null;
+    hoursStuck: number | null;
+  }>;
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -83,9 +99,10 @@ export const useFinanceCR = (id: string) =>
   useQuery({
     queryKey: ['finance-cr', id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ success: boolean; data: FinanceCRSummary & { versions: unknown[]; statusHistory: unknown[] } }>(
-        `/dashboard/finance/crs/${id}`,
-      );
+      const { data } = await apiClient.get<{
+        success: boolean;
+        data: FinanceCRSummary & { versions: unknown[]; statusHistory: unknown[] };
+      }>(`/dashboard/finance/crs/${id}`);
       return data.data;
     },
     enabled: !!id,
@@ -95,10 +112,10 @@ export const useDashboard = (params?: { dateFrom?: string; dateTo?: string }) =>
   useQuery({
     queryKey: ['dashboard', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ success: boolean; data: FinanceDashboardData | SADashboardData }>(
-        '/dashboard',
-        { params },
-      );
+      const { data } = await apiClient.get<{
+        success: boolean;
+        data: FinanceDashboardData | SADashboardData;
+      }>('/dashboard', { params });
       return data.data;
     },
   });

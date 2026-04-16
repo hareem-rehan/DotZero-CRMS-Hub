@@ -28,9 +28,21 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const TIMEZONES = [
-  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Dubai', 'Asia/Karachi',
-  'Asia/Riyadh', 'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney',
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Asia/Dubai',
+  'Asia/Karachi',
+  'Asia/Riyadh',
+  'Asia/Kolkata',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Australia/Sydney',
 ];
 
 export default function ProfilePage() {
@@ -44,7 +56,11 @@ export default function ProfilePage() {
     notifyOnCrApproved: true,
     notifyOnCrDeclined: true,
   });
-  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwForm, setPwForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
@@ -62,7 +78,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
-      setProfileForm({ name: profile.name, phone: profile.phone ?? '', timezone: profile.timezone ?? 'UTC' });
+      setProfileForm({
+        name: profile.name,
+        phone: profile.phone ?? '',
+        timezone: profile.timezone ?? 'UTC',
+      });
       setNotifForm({
         notifyOnCrSubmitted: profile.notifyOnCrSubmitted,
         notifyOnCrReturned: profile.notifyOnCrReturned,
@@ -82,7 +102,9 @@ export default function ProfilePage() {
       setTimeout(() => setProfileSuccess(''), 3000);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to update profile.';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to update profile.';
       setProfileError(msg);
       setProfileSuccess('');
     },
@@ -98,24 +120,41 @@ export default function ProfilePage() {
       setTimeout(() => setPwSuccess(''), 3000);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to change password.';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to change password.';
       setPwError(msg);
       setPwSuccess('');
     },
   });
 
   const handleProfileSave = () => {
-    if (!profileForm.name.trim()) { setProfileError('Name is required.'); return; }
+    if (!profileForm.name.trim()) {
+      setProfileError('Name is required.');
+      return;
+    }
     setProfileError('');
     updateMutation.mutate({ ...profileForm, ...notifForm });
   };
 
   const handlePasswordChange = () => {
-    if (!pwForm.currentPassword || !pwForm.newPassword) { setPwError('All fields are required.'); return; }
-    if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('New passwords do not match.'); return; }
-    if (pwForm.newPassword.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+    if (!pwForm.currentPassword || !pwForm.newPassword) {
+      setPwError('All fields are required.');
+      return;
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('New passwords do not match.');
+      return;
+    }
+    if (pwForm.newPassword.length < 8) {
+      setPwError('Password must be at least 8 characters.');
+      return;
+    }
     setPwError('');
-    changePwMutation.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+    changePwMutation.mutate({
+      currentPassword: pwForm.currentPassword,
+      newPassword: pwForm.newPassword,
+    });
   };
 
   if (isLoading) {
@@ -129,7 +168,6 @@ export default function ProfilePage() {
   return (
     <PageWrapper title="Profile">
       <div className="max-w-2xl space-y-6">
-
         {/* Identity card */}
         <div className="rounded-xl border border-[#E5E5E5] bg-white p-6">
           <div className="flex items-center gap-4 mb-6">
@@ -182,7 +220,11 @@ export default function ProfilePage() {
                   onChange={(e) => setProfileForm((p) => ({ ...p, timezone: e.target.value }))}
                   className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
                 >
-                  {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>
+                      {tz}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -193,13 +235,16 @@ export default function ProfilePage() {
         <div className="rounded-xl border border-[#E5E5E5] bg-white p-6">
           <h3 className="text-sm font-semibold text-[#2D2D2D] mb-4">Email Notifications</h3>
           <div className="space-y-3">
-            {([
+            {[
               { key: 'notifyOnCrSubmitted' as const, label: 'CR submitted' },
               { key: 'notifyOnCrReturned' as const, label: 'Estimation returned to me' },
               { key: 'notifyOnCrApproved' as const, label: 'CR approved' },
               { key: 'notifyOnCrDeclined' as const, label: 'CR declined' },
-            ]).map(({ key, label }) => (
-              <label key={key} className="flex items-center gap-3 text-sm text-[#2D2D2D] cursor-pointer">
+            ].map(({ key, label }) => (
+              <label
+                key={key}
+                className="flex items-center gap-3 text-sm text-[#2D2D2D] cursor-pointer"
+              >
                 <input
                   type="checkbox"
                   checked={notifForm[key]}
@@ -224,7 +269,9 @@ export default function ProfilePage() {
           <h3 className="text-sm font-semibold text-[#2D2D2D] mb-4">Change Password</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#2D2D2D] mb-1">Current Password</label>
+              <label className="block text-sm font-medium text-[#2D2D2D] mb-1">
+                Current Password
+              </label>
               <div className="relative">
                 <input
                   type={showCurrent ? 'text' : 'password'}
@@ -232,12 +279,35 @@ export default function ProfilePage() {
                   onChange={(e) => setPwForm((p) => ({ ...p, currentPassword: e.target.value }))}
                   className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
                 />
-                <button type="button" onClick={() => setShowCurrent((v) => !v)}
-                  className="absolute right-3 top-2.5 text-[#5D5B5B] hover:text-[#2D2D2D]">
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent((v) => !v)}
+                  className="absolute right-3 top-2.5 text-[#5D5B5B] hover:text-[#2D2D2D]"
+                >
                   {showCurrent ? (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                      />
+                    </svg>
                   ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
                   )}
                 </button>
               </div>
@@ -251,18 +321,43 @@ export default function ProfilePage() {
                   onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))}
                   className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
                 />
-                <button type="button" onClick={() => setShowNew((v) => !v)}
-                  className="absolute right-3 top-2.5 text-[#5D5B5B] hover:text-[#2D2D2D]">
+                <button
+                  type="button"
+                  onClick={() => setShowNew((v) => !v)}
+                  className="absolute right-3 top-2.5 text-[#5D5B5B] hover:text-[#2D2D2D]"
+                >
                   {showNew ? (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                      />
+                    </svg>
                   ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
                   )}
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#2D2D2D] mb-1">Confirm New Password</label>
+              <label className="block text-sm font-medium text-[#2D2D2D] mb-1">
+                Confirm New Password
+              </label>
               <input
                 type="password"
                 value={pwForm.confirmPassword}
@@ -280,7 +375,6 @@ export default function ProfilePage() {
             </Button>
           </div>
         </div>
-
       </div>
     </PageWrapper>
   );

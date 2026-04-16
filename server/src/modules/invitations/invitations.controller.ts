@@ -34,7 +34,12 @@ export const resend = async (req: Request, res: Response, next: NextFunction): P
       req.user?.userId as string,
     );
     const magicLink = `${env.CLIENT_URL}/register?token=${result.token}`;
-    res.json({ success: true, data: { message: result.message, magicLink }, error: null, meta: null });
+    res.json({
+      success: true,
+      data: { message: result.message, magicLink },
+      error: null,
+      meta: null,
+    });
   } catch (err) {
     next(err);
   }

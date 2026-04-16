@@ -35,7 +35,10 @@ const getEtherealTransporter = async (): Promise<nodemailer.Transporter> => {
     secure: false,
     auth: { user: testAccount.user, pass: testAccount.pass },
   });
-  logger.info({ account: testAccount.user }, '[email] Ethereal test account created (fallback mode)');
+  logger.info(
+    { account: testAccount.user },
+    '[email] Ethereal test account created (fallback mode)',
+  );
   return etherealTransporter;
 };
 
@@ -44,24 +47,26 @@ export const sendEmail = async (to: string, subject: string, htmlBody: string): 
     if (USE_SENDGRID) {
       await sgMail.send({ to, from: env.EMAIL_FROM, subject, html: htmlBody });
       logger.info({ to, subject }, '[email] Sent via SendGrid');
-
     } else if (USE_GMAIL) {
       const transporter = getGmailTransporter();
-      await transporter.sendMail({ from: `"DotZero CR Portal" <${env.SMTP_USER}>`, to, subject, html: htmlBody });
+      await transporter.sendMail({
+        from: `"DotZero CR Portal" <${env.SMTP_USER}>`,
+        to,
+        subject,
+        html: htmlBody,
+      });
       logger.info({ to, subject }, '[email] Sent via Gmail SMTP');
-      console.log(`\n📧 EMAIL SENT (Gmail)\n   To: ${to}\n   Subject: ${subject}\n`);
-
     } else {
       // No email service configured — use Ethereal and print preview URL
       const transporter = await getEtherealTransporter();
-      const info = await transporter.sendMail({ from: env.EMAIL_FROM, to, subject, html: htmlBody });
+      const info = await transporter.sendMail({
+        from: env.EMAIL_FROM,
+        to,
+        subject,
+        html: htmlBody,
+      });
       const previewUrl = nodemailer.getTestMessageUrl(info);
       logger.info({ to, subject, previewUrl }, '[email] Sent via Ethereal (dev fallback)');
-      console.log('\n📧 EMAIL SENT (Ethereal dev preview)');
-      console.log(`   To:      ${to}`);
-      console.log(`   Subject: ${subject}`);
-      console.log(`   Preview: ${previewUrl}`);
-      console.log('');
     }
   } catch (err) {
     logger.error({ err, to, subject }, '[email] Failed to send email');

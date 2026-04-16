@@ -50,3 +50,6 @@ projectsRouter.patch('/:id/archive', ctrl.archive);
 
 // PATCH /api/v1/projects/:id/unarchive
 projectsRouter.patch('/:id/unarchive', ctrl.unarchive);
+
+// DELETE /api/v1/projects/:id
+projectsRouter.delete('/:id', ctrl.deleteProject);

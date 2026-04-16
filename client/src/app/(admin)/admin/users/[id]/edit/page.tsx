@@ -63,7 +63,8 @@ export default function EditUserPage() {
         />
         {error && (
           <p className="mt-3 text-sm text-red-600">
-            {(error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to update user'}
+            {(error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+              'Failed to update user'}
           </p>
         )}
       </div>

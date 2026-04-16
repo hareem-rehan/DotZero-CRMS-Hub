@@ -70,7 +70,12 @@ export const inviteEmail = (email: string, registerUrl: string, projectName: str
   `),
 });
 
-export const crSubmittedEmail = (dmName: string, crNumber: string, projectName: string, crId: string) => ({
+export const crSubmittedEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+) => ({
   subject: `New CR Pending Estimation — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">New Change Request Submitted</h2>
@@ -80,7 +85,13 @@ export const crSubmittedEmail = (dmName: string, crNumber: string, projectName: 
   `),
 });
 
-export const estimationReturnedEmail = (poName: string, crNumber: string, projectName: string, crId: string, estimatedHours: number) => ({
+export const estimationReturnedEmail = (
+  poName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+  estimatedHours: number,
+) => ({
   subject: `Estimation Ready — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Your CR Has Been Estimated</h2>
@@ -92,7 +103,12 @@ export const estimationReturnedEmail = (poName: string, crNumber: string, projec
   `),
 });
 
-export const crApprovedEmail = (dmName: string, crNumber: string, projectName: string, approvalNotes?: string) => ({
+export const crApprovedEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  approvalNotes?: string,
+) => ({
   subject: `CR Approved — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Approved</h2>
@@ -103,7 +119,12 @@ export const crApprovedEmail = (dmName: string, crNumber: string, projectName: s
   `),
 });
 
-export const crDeclinedEmail = (dmName: string, crNumber: string, projectName: string, reason: string) => ({
+export const crDeclinedEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  reason: string,
+) => ({
   subject: `CR Declined — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Declined</h2>
@@ -116,7 +137,13 @@ export const crDeclinedEmail = (dmName: string, crNumber: string, projectName: s
   `),
 });
 
-export const crResubmittedEmail = (dmName: string, crNumber: string, projectName: string, version: number, crId: string) => ({
+export const crResubmittedEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  version: number,
+  crId: string,
+) => ({
   subject: `CR Resubmitted (v${version}) — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Resubmitted</h2>
@@ -127,7 +154,14 @@ export const crResubmittedEmail = (dmName: string, crNumber: string, projectName
   `),
 });
 
-export const statusChangedEmail = (userName: string, crNumber: string, projectName: string, newStatus: string, crId: string, role: string) => ({
+export const statusChangedEmail = (
+  userName: string,
+  crNumber: string,
+  projectName: string,
+  newStatus: string,
+  crId: string,
+  role: string,
+) => ({
   subject: `CR ${crNumber} — Status Updated to ${newStatus.replace('_', ' ')}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Status Updated</h2>
@@ -138,7 +172,13 @@ export const statusChangedEmail = (userName: string, crNumber: string, projectNa
   `),
 });
 
-export const reminderEmail = (dmName: string, crNumber: string, projectName: string, hoursStuck: number, crId: string) => ({
+export const reminderEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  hoursStuck: number,
+  crId: string,
+) => ({
   subject: `Reminder: CR ${crNumber} awaiting estimation for ${hoursStuck}h`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Estimation Reminder</h2>

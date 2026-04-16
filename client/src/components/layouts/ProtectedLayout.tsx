@@ -73,9 +73,7 @@ export function ProtectedLayout({ children, allowedRoles }: ProtectedLayoutProps
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Navbar />
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );

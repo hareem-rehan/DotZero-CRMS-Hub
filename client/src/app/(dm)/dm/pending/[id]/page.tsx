@@ -9,6 +9,7 @@ import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { SignatureCanvas } from '@/components/ui/SignatureCanvas';
 import { toast } from 'sonner';
 import { useCR, useSaveImpactAnalysis } from '@/hooks/useCRs';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function DmCREstimatePage() {
   const { id } = useParams<{ id: string }>();
@@ -75,10 +76,11 @@ export default function DmCREstimatePage() {
   return (
     <PageWrapper title={`${cr.crNumber} — Estimation`}>
       <div className="space-y-6">
-
         {/* PO Section — read-only, grey background */}
         <div className="rounded-xl border border-[#E5E5E5] bg-[#F7F7F7] p-6">
-          <h2 className="mb-4 text-sm font-semibold text-[#5D5B5B] uppercase tracking-wide">Change Request Details</h2>
+          <h2 className="mb-4 text-sm font-semibold text-[#5D5B5B] uppercase tracking-wide">
+            Change Request Details
+          </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-[#5D5B5B]">CR Number</p>
@@ -111,21 +113,30 @@ export default function DmCREstimatePage() {
           </div>
           <div className="mt-4">
             <p className="text-xs text-[#5D5B5B]">Description</p>
-            <div className="mt-1 rounded-lg border border-[#E5E5E5] bg-white p-3 text-sm text-[#2D2D2D]"
-              dangerouslySetInnerHTML={{ __html: cr.description }} />
+            <div
+              className="mt-1 rounded-lg border border-[#E5E5E5] bg-white p-3 text-sm text-[#2D2D2D]"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
+            />
           </div>
           <div className="mt-4">
             <p className="text-xs text-[#5D5B5B]">Business Justification</p>
-            <div className="mt-1 rounded-lg border border-[#E5E5E5] bg-white p-3 text-sm text-[#2D2D2D]"
-              dangerouslySetInnerHTML={{ __html: cr.businessJustification }} />
+            <div
+              className="mt-1 rounded-lg border border-[#E5E5E5] bg-white p-3 text-sm text-[#2D2D2D]"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
+            />
           </div>
           {cr.attachments.length > 0 && (
             <div className="mt-4">
               <p className="text-xs text-[#5D5B5B] mb-2">Attachments</p>
               <div className="flex flex-wrap gap-2">
                 {cr.attachments.map((a) => (
-                  <a key={a.id} href={a.fileUrl} target="_blank" rel="noopener noreferrer"
-                    className="rounded-md border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs text-[#2D2D2D] hover:bg-gray-50">
+                  <a
+                    key={a.id}
+                    href={a.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs text-[#2D2D2D] hover:bg-gray-50"
+                  >
                     {a.fileName}
                   </a>
                 ))}
@@ -152,7 +163,9 @@ export default function DmCREstimatePage() {
               placeholder="e.g. 24"
             />
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Timeline Impact</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Timeline Impact
+              </label>
               <textarea
                 rows={3}
                 value={timelineImpact}
@@ -163,7 +176,9 @@ export default function DmCREstimatePage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Affected Deliverables</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Affected Deliverables
+              </label>
               <textarea
                 rows={3}
                 value={affectedDeliverables}
@@ -174,7 +189,9 @@ export default function DmCREstimatePage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Revised Milestones</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Revised Milestones
+              </label>
               <textarea
                 rows={3}
                 value={revisedMilestones}
@@ -185,7 +202,9 @@ export default function DmCREstimatePage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Resources Required</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Resources Required
+              </label>
               <textarea
                 rows={3}
                 value={resourcesRequired}
@@ -196,7 +215,9 @@ export default function DmCREstimatePage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Recommendation</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Recommendation
+              </label>
               <textarea
                 rows={3}
                 value={recommendation}
@@ -210,7 +231,9 @@ export default function DmCREstimatePage() {
 
           {!isReadOnly && (
             <div className="mt-5">
-              <label className="mb-2 block text-sm font-medium text-[#2D2D2D]">DM Signature <span className="text-[#EF323F]">*</span> (required to return to PO)</label>
+              <label className="mb-2 block text-sm font-medium text-[#2D2D2D]">
+                DM Signature <span className="text-[#EF323F]">*</span> (required to return to PO)
+              </label>
               <SignatureCanvas value={dmSignature} onChange={setDmSignature} />
             </div>
           )}
@@ -235,7 +258,6 @@ export default function DmCREstimatePage() {
             </div>
           )}
         </div>
-
       </div>
     </PageWrapper>
   );

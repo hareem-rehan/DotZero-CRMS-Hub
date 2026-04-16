@@ -68,7 +68,12 @@ export default function SettingsPage() {
   };
 
   const handleNotifSave = () => {
-    updateMe.mutate({ notifyOnCrSubmitted, notifyOnCrReturned, notifyOnCrApproved, notifyOnCrDeclined });
+    updateMe.mutate({
+      notifyOnCrSubmitted,
+      notifyOnCrReturned,
+      notifyOnCrApproved,
+      notifyOnCrDeclined,
+    });
   };
 
   const handlePasswordChange = () => {
@@ -111,15 +116,10 @@ export default function SettingsPage() {
   return (
     <PageWrapper title="Settings">
       <div className="space-y-6 max-w-2xl">
-
         {/* Profile */}
         <SectionCard title="Profile">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              label="Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <Input label="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
             <div>
               <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Email</label>
               <input
@@ -146,7 +146,9 @@ export default function SettingsPage() {
               >
                 <option value="">Select timezone…</option>
                 {TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>{tz}</option>
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
                 ))}
               </select>
             </div>
@@ -194,13 +196,35 @@ export default function SettingsPage() {
 
         {/* Notification Preferences */}
         <SectionCard title="Email Notifications">
-          <p className="mb-4 text-sm text-[#5D5B5B]">Choose which events trigger an email to you.</p>
+          <p className="mb-4 text-sm text-[#5D5B5B]">
+            Choose which events trigger an email to you.
+          </p>
           <div className="space-y-3">
             {[
-              { key: 'notifyOnCrSubmitted', label: 'New CR submitted', checked: notifyOnCrSubmitted, onChange: setNotifyOnCrSubmitted },
-              { key: 'notifyOnCrReturned', label: 'CR returned for revision', checked: notifyOnCrReturned, onChange: setNotifyOnCrReturned },
-              { key: 'notifyOnCrApproved', label: 'CR approved', checked: notifyOnCrApproved, onChange: setNotifyOnCrApproved },
-              { key: 'notifyOnCrDeclined', label: 'CR declined', checked: notifyOnCrDeclined, onChange: setNotifyOnCrDeclined },
+              {
+                key: 'notifyOnCrSubmitted',
+                label: 'New CR submitted',
+                checked: notifyOnCrSubmitted,
+                onChange: setNotifyOnCrSubmitted,
+              },
+              {
+                key: 'notifyOnCrReturned',
+                label: 'CR returned for revision',
+                checked: notifyOnCrReturned,
+                onChange: setNotifyOnCrReturned,
+              },
+              {
+                key: 'notifyOnCrApproved',
+                label: 'CR approved',
+                checked: notifyOnCrApproved,
+                onChange: setNotifyOnCrApproved,
+              },
+              {
+                key: 'notifyOnCrDeclined',
+                label: 'CR declined',
+                checked: notifyOnCrDeclined,
+                onChange: setNotifyOnCrDeclined,
+              },
             ].map(({ key, label, checked, onChange }) => (
               <label key={key} className="flex cursor-pointer items-center gap-3">
                 <input
@@ -230,14 +254,16 @@ export default function SettingsPage() {
               { label: 'Total CRs', value: stats?.changeRequests },
               { label: 'Pending Review', value: stats?.pendingCRs },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-center">
+              <div
+                key={label}
+                className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-center"
+              >
                 <p className="text-2xl font-bold text-[#2D2D2D]">{value ?? '—'}</p>
                 <p className="mt-1 text-xs text-[#5D5B5B]">{label}</p>
               </div>
             ))}
           </div>
         </SectionCard>
-
       </div>
     </PageWrapper>
   );

@@ -68,7 +68,10 @@ export default function AllCRsPage() {
       header: 'CR #',
       sortable: true,
       render: (row) => (
-        <Link href={`/admin/change-requests/${row.id}`} className="font-mono text-sm font-medium text-[#EF323F] hover:underline">
+        <Link
+          href={`/admin/change-requests/${row.id}`}
+          className="font-mono text-sm font-medium text-[#EF323F] hover:underline"
+        >
           {row.crNumber}
         </Link>
       ),
@@ -78,7 +81,10 @@ export default function AllCRsPage() {
       header: 'Title',
       sortable: true,
       render: (row) => (
-        <Link href={`/admin/change-requests/${row.id}`} className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1">
+        <Link
+          href={`/admin/change-requests/${row.id}`}
+          className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1"
+        >
           {row.title}
         </Link>
       ),
@@ -86,9 +92,7 @@ export default function AllCRsPage() {
     {
       key: 'project',
       header: 'Project',
-      render: (row) => (
-        <span className="text-sm text-[#5D5B5B]">{row.project.name}</span>
-      ),
+      render: (row) => <span className="text-sm text-[#5D5B5B]">{row.project.name}</span>,
     },
     {
       key: 'submittedBy',
@@ -109,7 +113,11 @@ export default function AllCRsPage() {
       key: 'updatedAt',
       header: 'Last Updated',
       sortable: true,
-      render: (row) => <span className="text-sm text-[#5D5B5B]">{new Date(row.updatedAt).toLocaleDateString()}</span>,
+      render: (row) => (
+        <span className="text-sm text-[#5D5B5B]">
+          {new Date(row.updatedAt).toLocaleDateString()}
+        </span>
+      ),
     },
   ];
 
@@ -120,30 +128,45 @@ export default function AllCRsPage() {
           type="text"
           placeholder="Search by CR# or title…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-52"
         />
         <Select
           value={projectId}
-          onChange={(e) => { setProjectId(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setProjectId(e.target.value);
+            setPage(1);
+          }}
           options={projectOptions}
           className="w-48"
         />
         <Select
           value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
           options={STATUS_OPTIONS}
           className="w-40"
         />
         <Select
           value={changeType}
-          onChange={(e) => { setChangeType(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setChangeType(e.target.value);
+            setPage(1);
+          }}
           options={TYPE_OPTIONS}
           className="w-36"
         />
         <Select
           value={priority}
-          onChange={(e) => { setPriority(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setPriority(e.target.value);
+            setPage(1);
+          }}
           options={PRIORITY_OPTIONS}
           className="w-36"
         />
@@ -161,7 +184,7 @@ export default function AllCRsPage() {
       {data && data.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm text-[#5D5B5B]">
           <span>
-            Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, data.total)} of {data.total}
+            Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, data.total)} of {data.total}
           </span>
           <div className="flex gap-2">
             <button

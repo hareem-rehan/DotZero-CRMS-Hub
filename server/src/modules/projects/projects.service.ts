@@ -149,7 +149,10 @@ export const createProject = async (
 
   // Notify assigned DM
   if (input.assignedDmId) {
-    const dm = await prisma.user.findUnique({ where: { id: input.assignedDmId }, select: { email: true, name: true } });
+    const dm = await prisma.user.findUnique({
+      where: { id: input.assignedDmId },
+      select: { email: true, name: true },
+    });
     if (dm) {
       const tpl = dmAssignedEmail(dm.name, project.name, `${env.CLIENT_URL}/dm/pending`);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
@@ -178,8 +181,7 @@ export const updateProject = async (
   const project = await prisma.project.findUnique({ where: { id } });
   if (!project) throw Object.assign(new Error('Project not found'), { statusCode: 404 });
 
-  // Capture previous emails before update (for diff)
-  const prevClientEmail = project.clientEmail ?? null;
+  // Capture previous member emails before update (for diff — used to detect new additions)
   const prevMemberEmails = new Set<string>(
     Array.isArray(project.clientMemberEmails) ? (project.clientMemberEmails as string[]) : [],
   );
@@ -192,11 +194,15 @@ export const updateProject = async (
       ...(input.hourlyRate !== undefined && { hourlyRate: input.hourlyRate }),
       ...(input.currency !== undefined && { currency: input.currency }),
       ...(input.status !== undefined && { status: input.status }),
-      ...(input.startDate !== undefined && { startDate: input.startDate ? new Date(input.startDate) : null }),
+      ...(input.startDate !== undefined && {
+        startDate: input.startDate ? new Date(input.startDate) : null,
+      }),
       ...(input.assignedDmId !== undefined && { assignedDmId: input.assignedDmId }),
       ...(input.showRateToDm !== undefined && { showRateToDm: input.showRateToDm }),
       ...(input.clientEmail !== undefined && { clientEmail: input.clientEmail }),
-      ...(input.clientMemberEmails !== undefined && { clientMemberEmails: input.clientMemberEmails }),
+      ...(input.clientMemberEmails !== undefined && {
+        clientMemberEmails: input.clientMemberEmails,
+      }),
     },
   });
 
@@ -223,7 +229,10 @@ export const updateProject = async (
 
   // Notify newly assigned DM
   if (input.assignedDmId && input.assignedDmId !== project.assignedDmId) {
-    const dm = await prisma.user.findUnique({ where: { id: input.assignedDmId }, select: { email: true, name: true } });
+    const dm = await prisma.user.findUnique({
+      where: { id: input.assignedDmId },
+      select: { email: true, name: true },
+    });
     if (dm) {
       const tpl = dmAssignedEmail(dm.name, updated.name, `${env.CLIENT_URL}/dm/pending`);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
@@ -255,7 +264,10 @@ export const archiveProject = async (id: string, actorId: string) => {
   const updated = await prisma.project.update({ where: { id }, data: { status: 'ARCHIVED' } });
 
   await createAuditLog({
-    event: 'PROJECT_ARCHIVED', actorId, entityType: 'Project', entityId: id,
+    event: 'PROJECT_ARCHIVED',
+    actorId,
+    entityType: 'Project',
+    entityId: id,
     metadata: { previousStatus: project.status },
   });
 
@@ -268,9 +280,46 @@ export const unarchiveProject = async (id: string, actorId: string) => {
 
   const updated = await prisma.project.update({ where: { id }, data: { status: 'ACTIVE' } });
 
-  await createAuditLog({ event: 'PROJECT_UNARCHIVED', actorId, entityType: 'Project', entityId: id });
+  await createAuditLog({
+    event: 'PROJECT_UNARCHIVED',
+    actorId,
+    entityType: 'Project',
+    entityId: id,
+  });
 
   return updated;
+};
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+export const deleteProject = async (id: string, actorId: string) => {
+  // Fetch + validate before entering the transaction
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: { _count: { select: { changeRequests: true } } },
+  });
+  if (!project) throw new AppError(404, 'Project not found');
+  if (project._count.changeRequests > 0) {
+    throw new AppError(
+      400,
+      'Cannot delete a project that has change requests. Archive it instead.',
+    );
+  }
+
+  // Wrap the delete in a transaction so it either fully succeeds or rolls back
+  await prisma.$transaction(async (tx) => {
+    await tx.project.delete({ where: { id } });
+  });
+
+  // Audit log is intentionally outside the transaction — it swallows its own
+  // errors so it must never be the reason a delete rolls back
+  await createAuditLog({
+    event: 'PROJECT_DELETED',
+    actorId,
+    entityType: 'Project',
+    entityId: id,
+    metadata: { name: project.name },
+  });
 };
 
 // ─── Client Login Link ────────────────────────────────────────────────────────
@@ -280,7 +329,9 @@ export const generateClientLoginLinks = async (projectId: string, actorId: strin
     where: { id: projectId },
     include: {
       userAssignments: {
-        include: { user: { select: { id: true, name: true, email: true, role: true, isActive: true } } },
+        include: {
+          user: { select: { id: true, name: true, email: true, role: true, isActive: true } },
+        },
       },
     },
   });
@@ -310,9 +361,15 @@ export const generateClientLoginLinks = async (projectId: string, actorId: strin
       where: { projectId, usedAt: null, expiresAt: { gt: new Date() } },
     });
     if (pendingInvite) {
-      throw new AppError(400, `No registered PO found. A pending invitation exists for ${pendingInvite.email} — they need to register first using the invitation link.`);
+      throw new AppError(
+        400,
+        `No registered PO found. A pending invitation exists for ${pendingInvite.email} — they need to register first using the invitation link.`,
+      );
     }
-    throw new AppError(404, 'No active Product Owner assigned to this project. Go to Edit Project and add the PO email to send a new invitation.');
+    throw new AppError(
+      404,
+      'No active Product Owner assigned to this project. Go to Edit Project and add the PO email to send a new invitation.',
+    );
   }
 
   const links = await Promise.all(
@@ -373,9 +430,7 @@ export const getMyProjects = async (userId: string) => {
     },
   });
 
-  return assignments
-    .map((a) => a.project)
-    .filter((p) => p.status === 'ACTIVE');
+  return assignments.map((a) => a.project).filter((p) => p.status === 'ACTIVE');
 };
 
 // ─── DM dropdown ──────────────────────────────────────────────────────────────

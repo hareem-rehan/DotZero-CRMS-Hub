@@ -21,10 +21,10 @@ export default function ClientLoginPage() {
     }
 
     apiClient
-      .post<{ success: boolean; data: { token: string; user: { id: string; name: string; email: string; role: string } } }>(
-        '/auth/magic-login',
-        { token },
-      )
+      .post<{
+        success: boolean;
+        data: { token: string; user: { id: string; name: string; email: string; role: string } };
+      }>('/auth/magic-login', { token })
       .then(({ data }) => {
         setAuth(data.data.user, data.data.token);
         router.replace('/client/my-crs');
@@ -48,8 +48,18 @@ export default function ClientLoginPage() {
   return (
     <div className="text-center space-y-4">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-        <svg className="h-6 w-6 text-[#EF323F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          className="h-6 w-6 text-[#EF323F]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </div>
       <h2 className="text-base font-semibold text-[#2D2D2D]">Link Invalid</h2>

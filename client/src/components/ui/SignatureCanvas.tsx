@@ -17,10 +17,13 @@ export function SignatureCanvas({ value, onChange }: SignatureCanvasProps) {
   const getPos = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    if ('touches' in e) {
+    if ('touches' in e && e.touches[0]) {
       return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     }
-    return { x: (e as React.MouseEvent).clientX - rect.left, y: (e as React.MouseEvent).clientY - rect.top };
+    return {
+      x: (e as React.MouseEvent).clientX - rect.left,
+      y: (e as React.MouseEvent).clientY - rect.top,
+    };
   };
 
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -75,14 +78,20 @@ export function SignatureCanvas({ value, onChange }: SignatureCanvasProps) {
       <div className="mb-2 flex gap-3 text-sm">
         <button
           type="button"
-          onClick={() => { setMode('draw'); clear(); }}
+          onClick={() => {
+            setMode('draw');
+            clear();
+          }}
           className={`rounded-md px-3 py-1 text-xs font-medium ${mode === 'draw' ? 'bg-[#2D2D2D] text-white' : 'border border-[#D3D3D3] text-[#5D5B5B]'}`}
         >
           Draw
         </button>
         <button
           type="button"
-          onClick={() => { setMode('type'); clear(); }}
+          onClick={() => {
+            setMode('type');
+            clear();
+          }}
           className={`rounded-md px-3 py-1 text-xs font-medium ${mode === 'type' ? 'bg-[#2D2D2D] text-white' : 'border border-[#D3D3D3] text-[#5D5B5B]'}`}
         >
           Type name
@@ -120,7 +129,9 @@ export function SignatureCanvas({ value, onChange }: SignatureCanvasProps) {
         onTouchEnd={stopDraw}
       />
       {!value && (
-        <p className="mt-1 text-xs text-[#5D5B5B]">{mode === 'draw' ? 'Draw your signature above' : 'Your typed name will appear above'}</p>
+        <p className="mt-1 text-xs text-[#5D5B5B]">
+          {mode === 'draw' ? 'Draw your signature above' : 'Your typed name will appear above'}
+        </p>
       )}
     </div>
   );

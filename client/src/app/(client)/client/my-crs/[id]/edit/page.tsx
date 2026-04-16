@@ -22,8 +22,6 @@ const schema = z.object({
   businessJustification: z.string().optional(),
   priority: z.string().optional(),
   changeType: z.string().optional(),
-  requestingParty: z.string().optional(),
-  sowRef: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -57,7 +55,14 @@ export default function EditCRPage() {
   const updateCR = useUpdateCR(id);
   const submitCR = useSubmitCR();
 
-  const { control, register, handleSubmit, reset, watch, formState: { errors, isDirty } } = useForm<FormValues>({
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isDirty },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
@@ -65,8 +70,6 @@ export default function EditCRPage() {
       businessJustification: '',
       priority: 'MEDIUM',
       changeType: 'SCOPE',
-      requestingParty: '',
-      sowRef: '',
     },
   });
 
@@ -79,8 +82,6 @@ export default function EditCRPage() {
       businessJustification: cr.businessJustification,
       priority: cr.priority,
       changeType: cr.changeType,
-      requestingParty: cr.requestingParty,
-      sowRef: cr.sowRef ?? '',
     });
   }, [cr, reset]);
 
@@ -110,7 +111,9 @@ export default function EditCRPage() {
     if (!isDirty) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(autoSave, 60_000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
   }, [formValues, isDirty, autoSave]);
 
   // ── Save draft ────────────────────────────────────────────────────────────────
@@ -144,7 +147,9 @@ export default function EditCRPage() {
   if (isLoading) {
     return (
       <PageWrapper title="Edit Change Request">
-        <div className="flex items-center justify-center py-20 text-sm text-[#5D5B5B]">Loading...</div>
+        <div className="flex items-center justify-center py-20 text-sm text-[#5D5B5B]">
+          Loading...
+        </div>
       </PageWrapper>
     );
   }
@@ -154,7 +159,9 @@ export default function EditCRPage() {
       <PageWrapper title="Edit Change Request">
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <p className="text-sm text-red-600">Change request not found.</p>
-          <Button variant="secondary" onClick={() => router.back()}>Go Back</Button>
+          <Button variant="secondary" onClick={() => router.back()}>
+            Go Back
+          </Button>
         </div>
       </PageWrapper>
     );
@@ -164,16 +171,22 @@ export default function EditCRPage() {
     <PageWrapper title={`Edit — ${cr.crNumber}`}>
       {/* Breadcrumb */}
       <div className="mb-6 flex items-center gap-2 text-sm text-[#5D5B5B]">
-        <Link href="/client/my-crs" className="hover:text-[#EF323F]">My Change Requests</Link>
+        <Link href="/client/my-crs" className="hover:text-[#EF323F]">
+          My Change Requests
+        </Link>
         <span>/</span>
-        <Link href={`/client/my-crs/${id}`} className="hover:text-[#EF323F]">{cr.crNumber}</Link>
+        <Link href={`/client/my-crs/${id}`} className="hover:text-[#EF323F]">
+          {cr.crNumber}
+        </Link>
         <span>/</span>
         <span className="text-[#2D2D2D] font-medium">Edit</span>
       </div>
 
       {/* Auto-save indicator */}
       <div className="mb-4 flex items-center justify-between text-xs text-[#5D5B5B]">
-        <span>Project: <strong className="text-[#2D2D2D]">{cr.project.name}</strong></span>
+        <span>
+          Project: <strong className="text-[#2D2D2D]">{cr.project.name}</strong>
+        </span>
         {autoSaveStatus === 'saving' && <span>Saving draft...</span>}
         {autoSaveStatus === 'saved' && <span className="text-green-600">Draft saved</span>}
         {autoSaveStatus === 'idle' && <span>Auto-saves every 60 seconds</span>}
@@ -186,8 +199,12 @@ export default function EditCRPage() {
             Save changes and submit this CR to the Delivery Manager for review?
           </p>
           <div className="flex gap-2 ml-4 shrink-0">
-            <Button variant="secondary" onClick={() => setConfirmSubmit(false)}>Cancel</Button>
-            <Button onClick={onSubmit} loading={isActionLoading}>Confirm</Button>
+            <Button variant="secondary" onClick={() => setConfirmSubmit(false)}>
+              Cancel
+            </Button>
+            <Button onClick={onSubmit} loading={isActionLoading}>
+              Confirm
+            </Button>
           </div>
         </div>
       )}
@@ -228,19 +245,6 @@ export default function EditCRPage() {
                   onChange={field.onChange}
                 />
               )}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Requesting Party"
-              placeholder="Who is requesting this change?"
-              {...register('requestingParty')}
-            />
-            <Input
-              label="SOW Reference"
-              placeholder="e.g. SOW-2024-001"
-              {...register('sowRef')}
             />
           </div>
         </div>
@@ -287,10 +291,23 @@ export default function EditCRPage() {
             <ul className="space-y-2">
               {cr.attachments.map((att) => (
                 <li key={att.id} className="flex items-center gap-2 text-sm text-[#5D5B5B]">
-                  <svg className="h-4 w-4 shrink-0 text-[#EF323F]" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                  <svg
+                    className="h-4 w-4 shrink-0 text-[#EF323F]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
-                  <a href={att.fileUrl} target="_blank" rel="noopener noreferrer" className="hover:text-[#EF323F] hover:underline truncate">
+                  <a
+                    href={att.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#EF323F] hover:underline truncate"
+                  >
                     {att.fileName}
                   </a>
                 </li>
@@ -302,11 +319,7 @@ export default function EditCRPage() {
         {/* New attachments */}
         <div className="rounded-lg border border-[#D3D3D3] bg-white p-6">
           <h2 className="mb-4 text-sm font-semibold text-[#2D2D2D]">Add Attachments</h2>
-          <FileUpload
-            files={files}
-            onFilesChange={setFiles}
-            label="Upload additional documents"
-          />
+          <FileUpload files={files} onFilesChange={setFiles} label="Upload additional documents" />
         </div>
 
         {/* Error */}
@@ -316,11 +329,21 @@ export default function EditCRPage() {
 
         {/* Actions */}
         <div className="flex items-center justify-between pb-6">
-          <Button variant="secondary" type="button" onClick={() => router.push(`/client/my-crs/${id}`)}>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => router.push(`/client/my-crs/${id}`)}
+          >
             Cancel
           </Button>
           <div className="flex gap-3">
-            <Button variant="secondary" type="button" onClick={onSaveDraft} loading={updateCR.isPending && !submitCR.isPending} disabled={isActionLoading}>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={onSaveDraft}
+              loading={updateCR.isPending && !submitCR.isPending}
+              disabled={isActionLoading}
+            >
               Save Draft
             </Button>
             <Button type="button" onClick={() => setConfirmSubmit(true)} disabled={isActionLoading}>

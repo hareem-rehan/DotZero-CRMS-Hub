@@ -69,14 +69,24 @@ export function FileUpload({ files, onFilesChange, label, error }: FileUploadPro
           isDragActive
             ? 'border-[#EF323F] bg-red-50'
             : files.length >= MAX_FILES
-            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-            : 'border-[#D3D3D3] hover:border-[#EF323F] hover:bg-red-50/30'
+              ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+              : 'border-[#D3D3D3] hover:border-[#EF323F] hover:bg-red-50/30'
         } ${error ? 'border-red-500' : ''}`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-1 text-sm text-[#5D5B5B]">
-          <svg className="h-8 w-8 text-[#D3D3D3]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+          <svg
+            className="h-8 w-8 text-[#D3D3D3]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+            />
           </svg>
           {files.length >= MAX_FILES ? (
             <span className="text-gray-400">Maximum {MAX_FILES} files reached</span>
@@ -95,14 +105,15 @@ export function FileUpload({ files, onFilesChange, label, error }: FileUploadPro
         </div>
       </div>
 
-      {(rejectMsg || error) && (
-        <p className="text-xs text-red-600">{rejectMsg || error}</p>
-      )}
+      {(rejectMsg || error) && <p className="text-xs text-red-600">{rejectMsg || error}</p>}
 
       {files.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {files.map((file, i) => (
-            <li key={i} className="flex items-center justify-between rounded-lg border border-[#D3D3D3] bg-white px-3 py-2 text-sm">
+            <li
+              key={i}
+              className="flex items-center justify-between rounded-lg border border-[#D3D3D3] bg-white px-3 py-2 text-sm"
+            >
               <div className="flex items-center gap-2 min-w-0">
                 <FileIcon mimeType={file.type} />
                 <span className="truncate text-[#2D2D2D]">{file.name}</span>
@@ -114,7 +125,13 @@ export function FileUpload({ files, onFilesChange, label, error }: FileUploadPro
                 className="ml-2 shrink-0 text-gray-400 hover:text-red-500 transition-colors"
                 aria-label="Remove file"
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -130,8 +147,16 @@ function FileIcon({ mimeType }: { mimeType: string }) {
   const isImage = mimeType.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
   return (
-    <svg className={`h-4 w-4 shrink-0 ${isPdf ? 'text-red-500' : isImage ? 'text-blue-500' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+    <svg
+      className={`h-4 w-4 shrink-0 ${isPdf ? 'text-red-500' : isImage ? 'text-blue-500' : 'text-green-600'}`}
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path
+        fillRule="evenodd"
+        d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }

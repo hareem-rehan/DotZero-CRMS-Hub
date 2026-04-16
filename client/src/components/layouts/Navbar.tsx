@@ -27,7 +27,9 @@ export function Navbar() {
         <div className="flex flex-col items-end leading-tight">
           <span className="text-sm font-semibold text-[#2D2D2D]">{user?.name}</span>
           {roleInfo && (
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleInfo.color}`}>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleInfo.color}`}
+            >
               {roleInfo.label}
             </span>
           )}
@@ -37,7 +39,12 @@ export function Navbar() {
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-[#5D5B5B] hover:bg-[#F7F7F7] hover:text-[#2D2D2D] transition-colors"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
           </svg>
           Logout
         </button>

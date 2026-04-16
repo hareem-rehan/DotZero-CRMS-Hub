@@ -11,10 +11,22 @@ dashboardRouter.use(authenticateToken);
 dashboardRouter.get('/', roleGuard(['SUPER_ADMIN', 'FINANCE']), dashboardController.getDashboard);
 
 // GET /api/v1/dashboard/finance/crs — Finance CR listing with cost data
-dashboardRouter.get('/finance/crs', roleGuard(['FINANCE', 'SUPER_ADMIN']), dashboardController.listFinanceCRs);
+dashboardRouter.get(
+  '/finance/crs',
+  roleGuard(['FINANCE', 'SUPER_ADMIN']),
+  dashboardController.listFinanceCRs,
+);
 
 // GET /api/v1/dashboard/finance/crs/:id — Finance CR detail
-dashboardRouter.get('/finance/crs/:id', roleGuard(['FINANCE', 'SUPER_ADMIN']), dashboardController.getFinanceCR);
+dashboardRouter.get(
+  '/finance/crs/:id',
+  roleGuard(['FINANCE', 'SUPER_ADMIN']),
+  dashboardController.getFinanceCR,
+);
 
 // GET /api/v1/dashboard/export?format=csv|pdf
-dashboardRouter.get('/export', roleGuard(['FINANCE', 'SUPER_ADMIN']), dashboardController.exportCRs);
+dashboardRouter.get(
+  '/export',
+  roleGuard(['FINANCE', 'SUPER_ADMIN']),
+  dashboardController.exportCRs,
+);

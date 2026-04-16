@@ -56,7 +56,8 @@ export default function EditProjectPage() {
         />
         {updateMutation.isError && (
           <p className="mt-3 text-sm text-red-600">
-            {(updateMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to update project'}
+            {(updateMutation.error as { response?: { data?: { error?: string } } })?.response?.data
+              ?.error ?? 'Failed to update project'}
           </p>
         )}
       </div>

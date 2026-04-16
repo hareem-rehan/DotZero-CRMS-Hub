@@ -29,6 +29,10 @@ prisma/schema.prisma already exists — don't touch it. No features, just root c
 
 ---
 
+I also want to create a log file of token consumed against each prompt 
+
+---- 
+
 ### P-0B: Server Skeleton
 
 ```
@@ -84,6 +88,7 @@ Install client dependencies. Must compile with no errors.
 ```
 
 ✅ Verify: `npm run dev` starts both client (3000) + server (4000)
+Always preview after each phase before moving to next phase 
 
 ---
 
@@ -329,7 +334,7 @@ GET /change-requests responses for role=DELIVERY_MANAGER must STRIP hourlyRate a
 Also add: POST /change-requests/:id/notes — internal notes visible to DM + SA only.
 ```
 
-✅ Verify: DM opens CR → status becomes UNDER_REVIEW. DM submits estimation → status ESTIMATED. No financial data in DM API responses.
+✅ Verify: DM opens CR → status becomes UNDER_REVIEW. DM submits estimation → status ESTIMATED. No financial data in DM API responses. ✅ COMPLETED
 
 ---
 
@@ -347,7 +352,7 @@ Build client/src/app/(dm)/:
 Build: SignatureCanvas component (draw on canvas with mouse/touch, or type name, returns base64 string). NO hourly rate, NO cost anywhere in DM UI.
 ```
 
-✅ Verify: DM sees pending queue → opens CR → fills estimation → signs → returns to PO → CR shows as Estimated
+✅ Verify: DM sees pending queue → opens CR → fills estimation → signs → returns to PO → CR shows as Estimated ✅ COMPLETED
 
 ---
 
@@ -540,7 +545,7 @@ SA only. No edit/delete actions — audit logs are immutable.
 | 3 — SA Projects | P-03A, P-03B | Project CRUD with UI |
 | 4 — SA Users | P-04A, P-04B | User management + invitations |
 | 5 — PO CRs | P-05A, P-05B | CR creation + submission |
-| 6 — DM Estimation | P-06A, P-06B | Estimation flow, no financials |
+| 6 — DM Estimation | P-06A, P-06B | Estimation flow, no financials | ✅ |
 | 7 — PO Decision | P-07A, P-07B | Approve/Decline/Resubmit + signatures + versioning |
 | 8 — Finance | P-08A, P-08B, P-08C | Listings, dashboard, exports |
 | 9 — Notifications | P-09A, P-09B, P-09C | All emails + cron + audit log |

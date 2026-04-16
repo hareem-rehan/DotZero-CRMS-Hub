@@ -53,7 +53,14 @@ export default function AuditLogPage() {
     queryFn: async () => {
       const { data } = await apiClient.get<{ success: boolean; data: AuditLogResult }>(
         '/audit-log',
-        { params: { search: search || undefined, entityType: entityType || undefined, page, pageSize: 50 } },
+        {
+          params: {
+            search: search || undefined,
+            entityType: entityType || undefined,
+            page,
+            pageSize: 50,
+          },
+        },
       );
       return data.data;
     },
@@ -83,7 +90,9 @@ export default function AuditLogPage() {
       render: (row) => {
         const cls = EVENT_COLORS[row.event] ?? 'bg-gray-100 text-gray-700';
         return (
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+          >
             {row.event.replace(/_/g, ' ')}
           </span>
         );
@@ -127,9 +136,7 @@ export default function AuditLogPage() {
     {
       key: 'ipAddress',
       header: 'IP',
-      render: (row) => (
-        <span className="text-xs text-[#5D5B5B]">{row.ipAddress ?? '—'}</span>
-      ),
+      render: (row) => <span className="text-xs text-[#5D5B5B]">{row.ipAddress ?? '—'}</span>,
     },
   ];
 
@@ -140,20 +147,28 @@ export default function AuditLogPage() {
           type="text"
           placeholder="Search events…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-52"
         />
         <select
           value={entityType}
-          onChange={(e) => { setEntityType(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setEntityType(e.target.value);
+            setPage(1);
+          }}
           className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-44"
         >
-          {ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {ENTITY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </select>
         {data && (
-          <span className="flex items-center text-sm text-[#5D5B5B]">
-            {data.total} entries
-          </span>
+          <span className="flex items-center text-sm text-[#5D5B5B]">{data.total} entries</span>
         )}
       </div>
 
@@ -167,7 +182,9 @@ export default function AuditLogPage() {
 
       {data && data.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm text-[#5D5B5B]">
-          <span>Page {page} of {data.totalPages}</span>
+          <span>
+            Page {page} of {data.totalPages}
+          </span>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}

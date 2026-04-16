@@ -5,7 +5,12 @@ import { prisma } from '../../config/db';
 import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
-import type { LoginInput, RegisterInput, ForgotPasswordInput, ResetPasswordInput } from './auth.validation';
+import type {
+  LoginInput,
+  RegisterInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from './auth.validation';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
@@ -36,7 +41,10 @@ export const authService = {
     let user = null;
     for (const candidate of candidates) {
       const matches = await bcrypt.compare(input.password, candidate.passwordHash);
-      if (matches) { user = candidate; break; }
+      if (matches) {
+        user = candidate;
+        break;
+      }
     }
 
     if (!user) {
@@ -60,7 +68,10 @@ export const authService = {
     }
 
     if (user.isLocked) {
-      throw new AppError(403, 'Account is locked. Please check your email to unlock or contact support.');
+      throw new AppError(
+        403,
+        'Account is locked. Please check your email to unlock or contact support.',
+      );
     }
 
     if (!user.isActive) {
@@ -78,7 +89,7 @@ export const authService = {
 
     const expiresIn = input.rememberMe ? JWT_EXPIRY_REMEMBER : JWT_EXPIRY_DEFAULT;
     const token = jwt.sign(
-      { userId: user.id, role: user.role, email: user.email },
+      { userId: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion },
       env.JWT_SECRET,
       { expiresIn } as jwt.SignOptions,
     );
@@ -193,12 +204,29 @@ export const authService = {
     return safeUser;
   },
 
-  async updateMe(userId: string, input: { name?: string; phone?: string; timezone?: string; notifyOnCrSubmitted?: boolean; notifyOnCrReturned?: boolean; notifyOnCrApproved?: boolean; notifyOnCrDeclined?: boolean }) {
+  async updateMe(
+    userId: string,
+    input: {
+      name?: string;
+      phone?: string;
+      timezone?: string;
+      notifyOnCrSubmitted?: boolean;
+      notifyOnCrReturned?: boolean;
+      notifyOnCrApproved?: boolean;
+      notifyOnCrDeclined?: boolean;
+    },
+  ) {
     const user = await prisma.user.update({
       where: { id: userId },
       data: input,
     });
-    await createAuditLog({ event: 'USER_UPDATED', actorId: userId, entityType: 'User', entityId: userId, metadata: { fields: Object.keys(input) } });
+    await createAuditLog({
+      event: 'USER_UPDATED',
+      actorId: userId,
+      entityType: 'User',
+      entityId: userId,
+      metadata: { fields: Object.keys(input) },
+    });
     const { passwordHash: _, ...safeUser } = user;
     return safeUser;
   },
@@ -209,8 +237,17 @@ export const authService = {
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) throw new AppError(400, 'Current password is incorrect');
     const newHash = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash, passwordSetAt: new Date() } });
-    await createAuditLog({ event: 'PASSWORD_RESET', actorId: userId, entityType: 'User', entityId: userId, metadata: { source: 'self' } });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash, passwordSetAt: new Date() },
+    });
+    await createAuditLog({
+      event: 'PASSWORD_RESET',
+      actorId: userId,
+      entityType: 'User',
+      entityId: userId,
+      metadata: { source: 'self' },
+    });
     return { message: 'Password changed successfully.' };
   },
 
@@ -219,7 +256,9 @@ export const authService = {
       prisma.user.count(),
       prisma.project.count(),
       prisma.changeRequest.count(),
-      prisma.changeRequest.count({ where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'RESUBMITTED'] } } }),
+      prisma.changeRequest.count({
+        where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'RESUBMITTED'] } },
+      }),
     ]);
     return { users, projects, changeRequests, pendingCRs };
   },
@@ -237,9 +276,14 @@ export const authService = {
 
     if (!tokenRecord) throw new AppError(400, 'Invalid or expired login link');
 
-    const metadata = tokenRecord.metadata as { tokenHash: string; expiresAt: string; usedAt?: string };
+    const metadata = tokenRecord.metadata as {
+      tokenHash: string;
+      expiresAt: string;
+      usedAt?: string;
+    };
     if (metadata.usedAt) throw new AppError(400, 'This login link has already been used');
-    if (new Date(metadata.expiresAt) < new Date()) throw new AppError(400, 'Login link has expired');
+    if (new Date(metadata.expiresAt) < new Date())
+      throw new AppError(400, 'Login link has expired');
 
     const user = await prisma.user.findUnique({ where: { id: tokenRecord.entityId } });
     if (!user || !user.isActive) throw new AppError(400, 'Invalid login link');
@@ -264,7 +308,7 @@ export const authService = {
     });
 
     const jwtToken = jwt.sign(
-      { userId: user.id, role: user.role, email: user.email },
+      { userId: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion },
       env.JWT_SECRET,
       { expiresIn: '8h' } as jwt.SignOptions,
     );
@@ -282,7 +326,9 @@ export const authService = {
     if (invite.expiresAt < new Date()) throw new AppError(400, 'Invitation has expired');
 
     // Check if this email+role combination is already registered
-    const existing = await prisma.user.findFirst({ where: { email: invite.email, role: invite.role } });
+    const existing = await prisma.user.findFirst({
+      where: { email: invite.email, role: invite.role },
+    });
     if (existing) throw new AppError(409, 'An account with this email and role already exists');
 
     const passwordHash = await bcrypt.hash(input.password, 12);

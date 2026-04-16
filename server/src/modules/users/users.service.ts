@@ -162,6 +162,9 @@ export const updateUser = async (id: string, input: UpdateUserInput, actorId: st
     data: {
       ...(input.name !== undefined && { name: input.name }),
       ...(input.role !== undefined && { role: input.role }),
+      // Bump tokenVersion when role changes to invalidate existing JWTs immediately
+      ...(input.role !== undefined &&
+        input.role !== user.role && { tokenVersion: { increment: 1 } }),
     },
     select: {
       id: true,
@@ -272,7 +275,10 @@ export const deleteUser = async (id: string, actorId: string) => {
     await tx.impactAnalysis.deleteMany({ where: { dmId: id } });
 
     // 2. Preserve CRs — nullify submittedById so CR history is retained
-    await tx.changeRequest.updateMany({ where: { submittedById: id }, data: { submittedById: null } });
+    await tx.changeRequest.updateMany({
+      where: { submittedById: id },
+      data: { submittedById: null },
+    });
 
     // 3. Delete invitations sent by this user
     await tx.invitation.deleteMany({ where: { sentById: id } });

@@ -14,8 +14,18 @@ export const authRouter = Router();
 
 // Public auth endpoints (rate-limited)
 authRouter.post('/login', authRateLimiter, validate(loginSchema), authController.login);
-authRouter.post('/forgot-password', authRateLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
-authRouter.post('/reset-password', authRateLimiter, validate(resetPasswordSchema), authController.resetPassword);
+authRouter.post(
+  '/forgot-password',
+  authRateLimiter,
+  validate(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+authRouter.post(
+  '/reset-password',
+  authRateLimiter,
+  validate(resetPasswordSchema),
+  authController.resetPassword,
+);
 authRouter.post('/register', authRateLimiter, validate(registerSchema), authController.register);
 authRouter.post('/magic-login', authRateLimiter, authController.magicLogin);
 

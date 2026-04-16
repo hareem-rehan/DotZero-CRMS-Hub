@@ -16,32 +16,47 @@ export const sendInvitation = async (input: CreateInvitationInput, actorId: stri
     select: { id: true, name: true, status: true },
   });
   if (!project) throw new AppError(404, 'Project not found');
-  if (project.status === 'ARCHIVED') throw new AppError(400, 'Cannot invite to an archived project');
-
-  // Check for pending (unused, unexpired) invitation for same email+project
-  const existing = await prisma.invitation.findFirst({
-    where: {
-      email: input.email,
-      projectId: input.projectId,
-      usedAt: null,
-      expiresAt: { gt: new Date() },
-    },
-  });
-  if (existing) throw new AppError(409, 'An active invitation already exists for this email and project');
+  if (project.status === 'ARCHIVED')
+    throw new AppError(400, 'Cannot invite to an archived project');
 
   const rawToken = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + INVITE_TOKEN_EXPIRY_MS);
 
-  const invitation = await prisma.invitation.create({
-    data: {
-      email: input.email,
-      projectId: input.projectId,
-      role: input.role,
-      token: rawToken,
-      expiresAt,
-      sentById: actorId,
-    },
-  });
+  // Wrap check+insert in a serializable transaction to prevent duplicate invitations
+  // from concurrent requests
+  let invitation: Awaited<ReturnType<typeof prisma.invitation.create>>;
+  try {
+    invitation = await prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.invitation.findFirst({
+          where: {
+            email: input.email,
+            projectId: input.projectId,
+            usedAt: null,
+            expiresAt: { gt: new Date() },
+          },
+        });
+        if (existing)
+          throw new AppError(409, 'An active invitation already exists for this email and project');
+
+        return tx.invitation.create({
+          data: {
+            email: input.email,
+            projectId: input.projectId,
+            role: input.role,
+            token: rawToken,
+            expiresAt,
+            sentById: actorId,
+          },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  } catch (err) {
+    // Re-throw AppError directly; wrap unexpected DB errors
+    if (err instanceof AppError) throw err;
+    throw new AppError(409, 'An active invitation already exists for this email and project');
+  }
 
   const registerLink = `${env.CLIENT_URL}/register?token=${rawToken}`;
 
