@@ -71,6 +71,22 @@ export interface SADashboardData {
   }>;
 }
 
+export interface PODashboardData {
+  summary: {
+    total: number;
+    pending: number;
+    approvedThisMonth: number;
+    declinedOrDeferred: number;
+  };
+  monthly: Array<{
+    month: string;
+    total: number;
+    approved: number;
+    pending: number;
+    declined: number;
+  }>;
+}
+
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const useFinanceCRs = (params?: {
@@ -108,13 +124,18 @@ export const useFinanceCR = (id: string) =>
     enabled: !!id,
   });
 
-export const useDashboard = (params?: { dateFrom?: string; dateTo?: string }) =>
+export const useDashboard = (params?: {
+  dateFrom?: string;
+  dateTo?: string;
+  projectId?: string;
+  clientName?: string;
+}) =>
   useQuery({
     queryKey: ['dashboard', params],
     queryFn: async () => {
       const { data } = await apiClient.get<{
         success: boolean;
-        data: FinanceDashboardData | SADashboardData;
+        data: FinanceDashboardData | SADashboardData | PODashboardData;
       }>('/dashboard', { params });
       return data.data;
     },

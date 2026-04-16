@@ -29,6 +29,7 @@ export function Badge({ label, variant = 'gray', className = '' }: BadgeProps) {
 // ─── Project status badge ─────────────────────────────────────────────────────
 
 const PROJECT_STATUS_MAP: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
+  DRAFT: { label: 'Draft', variant: 'gray' },
   ACTIVE: { label: 'Active', variant: 'green' },
   ON_HOLD: { label: 'On Hold', variant: 'yellow' },
   DELIVERED: { label: 'Delivered', variant: 'blue' },
@@ -50,13 +51,21 @@ const CR_STATUS_MAP: Record<string, { label: string; variant: BadgeProps['varian
   RESUBMITTED: { label: 'Resubmitted', variant: 'blue' },
   APPROVED: { label: 'Approved', variant: 'green' },
   DECLINED: { label: 'Declined', variant: 'red' },
+  DEFERRED: { label: 'Deferred', variant: 'purple' },
   IN_PROGRESS: { label: 'In Progress', variant: 'purple' },
   COMPLETED: { label: 'Completed', variant: 'green' },
   CANCELLED: { label: 'Cancelled', variant: 'gray' },
 };
 
-export function CRStatusBadge({ status }: { status: string }) {
-  const config = CR_STATUS_MAP[status] ?? { label: status, variant: 'gray' as const };
+export function CRStatusBadge({
+  status,
+  overrides,
+}: {
+  status: string;
+  overrides?: Record<string, { label: string; variant: BadgeProps['variant'] }>;
+}) {
+  const map = overrides ? { ...CR_STATUS_MAP, ...overrides } : CR_STATUS_MAP;
+  const config = map[status] ?? { label: status, variant: 'gray' as const };
   return <Badge label={config.label} variant={config.variant} />;
 }
 

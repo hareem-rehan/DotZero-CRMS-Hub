@@ -4,6 +4,7 @@ import {
   getFinanceCRById,
   getFinanceDashboard,
   getSADashboard,
+  getPODashboard,
   exportCRs,
 } from './dashboard.service';
 import { AppError } from '../../middleware/errorHandler';
@@ -14,14 +15,18 @@ export const dashboardController = {
   async getDashboard(req: Request, res: Response, next: NextFunction) {
     try {
       const role = req.user!.role;
-      const { dateFrom, dateTo } = req.query as Record<string, string>;
+      const { dateFrom, dateTo, projectId, clientName } = req.query as Record<string, string>;
 
       if (role === 'SUPER_ADMIN') {
         const data = await getSADashboard();
         return res.json({ success: true, data, error: null, meta: null });
       }
       if (role === 'FINANCE') {
-        const data = await getFinanceDashboard(dateFrom, dateTo);
+        const data = await getFinanceDashboard(dateFrom, dateTo, projectId, clientName);
+        return res.json({ success: true, data, error: null, meta: null });
+      }
+      if (role === 'PRODUCT_OWNER') {
+        const data = await getPODashboard(req.user!.userId);
         return res.json({ success: true, data, error: null, meta: null });
       }
       throw new AppError(403, 'Access denied');

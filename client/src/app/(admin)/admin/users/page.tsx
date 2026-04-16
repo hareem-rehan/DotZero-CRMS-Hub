@@ -19,14 +19,6 @@ import {
   User,
 } from '@/hooks/useUsers';
 
-// Only DotZero team roles — PO (external clients) excluded
-const ROLE_FILTER = [
-  { value: '', label: 'All Roles' },
-  { value: 'SUPER_ADMIN', label: 'Super Admin' },
-  { value: 'DELIVERY_MANAGER', label: 'Delivery Manager' },
-  { value: 'FINANCE', label: 'Finance' },
-];
-
 const STATUS_FILTER = [
   { value: '', label: 'All Statuses' },
   { value: 'true', label: 'Active' },
@@ -197,14 +189,12 @@ function ActionsDropdown({
 
 export default function UsersListPage() {
   const router = useRouter();
-  const [role, setRole] = useState('');
   const [isActive, setIsActive] = useState('');
   const [search, setSearch] = useState('');
   const [toggleTarget, setToggleTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   const { data, isLoading, isError } = useUsers({
-    role: role || undefined,
     isActive: isActive !== '' ? isActive === 'true' : undefined,
     search: search || undefined,
   });
@@ -300,12 +290,6 @@ export default function UsersListPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-56"
-        />
-        <Select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          options={ROLE_FILTER}
-          className="w-44"
         />
         <Select
           value={isActive}

@@ -38,10 +38,7 @@ const PRIORITY_OPTIONS = [
 const TYPE_OPTIONS = [
   { value: 'SCOPE', label: 'Scope' },
   { value: 'TIMELINE', label: 'Timeline' },
-  { value: 'BUDGET', label: 'Budget' },
-  { value: 'RESOURCE', label: 'Resource' },
-  { value: 'TECHNICAL', label: 'Technical' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'BOTH', label: 'Scope & Timeline' },
 ];
 
 // ─── Auto-save storage key ─────────────────────────────────────────────────────
@@ -367,7 +364,7 @@ export default function NewCRPage() {
               loading={submitCR.isPending}
               disabled={isLoading}
             >
-              Submit for Review
+              Submit for Estimation
             </Button>
           </div>
         </div>

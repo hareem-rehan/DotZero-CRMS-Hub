@@ -30,6 +30,7 @@ const CR_STATUS_OPTIONS = [
   { value: 'RESUBMITTED', label: 'Resubmitted' },
   { value: 'APPROVED', label: 'Approved' },
   { value: 'DECLINED', label: 'Declined' },
+  { value: 'DEFERRED', label: 'Deferred' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' },

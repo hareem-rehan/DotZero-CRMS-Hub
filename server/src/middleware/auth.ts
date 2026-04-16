@@ -39,7 +39,7 @@ export const authenticateToken = async (
       where: { id: decoded.userId },
       select: { tokenVersion: true, isActive: true },
     });
-    if (!user || !user.isActive || user.tokenVersion !== decoded.tokenVersion) {
+    if (!user || !user.isActive || user.tokenVersion !== (decoded.tokenVersion ?? 0)) {
       res.status(401).json({
         success: false,
         data: null,

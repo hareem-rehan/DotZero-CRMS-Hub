@@ -9,10 +9,10 @@ import { Navbar } from './Navbar';
 const INACTIVITY_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 const ROLE_HOME: Record<string, string> = {
-  SUPER_ADMIN: '/admin',
-  PRODUCT_OWNER: '/client',
-  DELIVERY_MANAGER: '/dm',
-  FINANCE: '/finance',
+  SUPER_ADMIN: '/admin/dashboard',
+  PRODUCT_OWNER: '/client/my-crs',
+  DELIVERY_MANAGER: '/dm/pending',
+  FINANCE: '/finance/cr-listing',
 };
 
 interface ProtectedLayoutProps {
@@ -26,13 +26,14 @@ export function ProtectedLayout({ children, allowedRoles }: ProtectedLayoutProps
   const { user, token, isHydrated, clearAuth } = useAuthStore();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Redirect to login if no session (only after hydration)
+  // Redirect to login if no session (only after hydration), preserving the intended URL
   useEffect(() => {
     if (!isHydrated) return;
     if (!token || !user) {
-      router.replace('/login');
+      const redirect = encodeURIComponent(pathname);
+      router.replace(`/login?redirect=${redirect}`);
     }
-  }, [isHydrated, token, user, router]);
+  }, [isHydrated, token, user, router, pathname]);
 
   // Redirect to role home if accessing wrong route group
   useEffect(() => {

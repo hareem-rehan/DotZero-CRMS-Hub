@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 
 const STATUS_FILTER_OPTIONS = [
   { value: '', label: 'All Statuses' },
+  { value: 'DRAFT', label: 'Draft' },
   { value: 'ACTIVE', label: 'Active' },
   { value: 'ON_HOLD', label: 'On Hold' },
   { value: 'DELIVERED', label: 'Delivered' },

@@ -12,13 +12,17 @@ export class AppError extends Error {
 }
 
 export const errorHandler = (
-  err: Error,
+  err: Error & { statusCode?: number },
   _req: Request,
   res: Response,
   _next: NextFunction,
 ): void => {
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
+  // AppError (explicit) or plain Error with a statusCode property attached
+  const statusCode = err instanceof AppError ? err.statusCode : (err.statusCode ?? 0);
+
+  if (statusCode >= 400 && statusCode < 600) {
+    if (statusCode >= 500) logger.error({ err }, 'Unhandled error');
+    res.status(statusCode).json({
       success: false,
       data: null,
       error: err.message,

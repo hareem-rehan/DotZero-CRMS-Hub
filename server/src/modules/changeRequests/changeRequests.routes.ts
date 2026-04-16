@@ -67,6 +67,9 @@ changeRequestsRouter.post(
   ctrl.decline,
 );
 
+// POST /api/v1/change-requests/:id/defer — PO defers with mandatory reason
+changeRequestsRouter.post('/:id/defer', roleGuard(['PRODUCT_OWNER', 'SUPER_ADMIN']), ctrl.defer);
+
 // POST /api/v1/change-requests/:id/resubmit — PO resubmits, creates new version
 changeRequestsRouter.post(
   '/:id/resubmit',

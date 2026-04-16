@@ -21,6 +21,7 @@ export interface CRSummary {
   priority: string;
   changeType: string;
   dateOfRequest: string | null;
+  version: number;
   updatedAt: string;
   project: {
     id: string;
@@ -56,9 +57,8 @@ export interface CRDetail extends CRSummary {
   } | null;
   approval: {
     id: string;
-    decision: string;
-    decisionNote: string | null;
-    decidedAt: string;
+    approvalNotes: string | null;
+    approvedAt: string;
   } | null;
   statusHistory: Array<{
     id: string;
@@ -66,7 +66,7 @@ export interface CRDetail extends CRSummary {
     toStatus: string;
     changedAt: string;
     note: string | null;
-    changedBy: { id: string; name: string };
+    changedBy: { id: string; name: string; role: string };
   }>;
   internalNotes?: Array<{
     id: string;
@@ -252,6 +252,30 @@ export const useDeclineCR = (
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
         'Failed to decline';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useDeferCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (deferReason: string) => {
+      const { data } = await apiClient.post(`/change-requests/${crId}/defer`, { deferReason });
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to defer';
       callbacks?.onError?.(msg);
     },
   });
