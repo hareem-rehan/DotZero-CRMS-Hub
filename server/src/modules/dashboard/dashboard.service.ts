@@ -209,11 +209,16 @@ export const getFinanceDashboard = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const extraWhere: Record<string, any> = {};
   if (projectId) extraWhere.projectId = projectId;
-  if (clientName) extraWhere.project = { clientName: { contains: clientName, mode: 'insensitive' } };
+  if (clientName)
+    extraWhere.project = { clientName: { contains: clientName, mode: 'insensitive' } };
 
   const [thisPeriodCRs, lastMonthCRs, projectBreakdown] = await Promise.all([
     prisma.changeRequest.findMany({
-      where: { status: approvedStatuses, dateOfRequest: { gte: rangeStart, lte: rangeEnd }, ...extraWhere },
+      where: {
+        status: approvedStatuses,
+        dateOfRequest: { gte: rangeStart, lte: rangeEnd },
+        ...extraWhere,
+      },
       include: {
         project: { select: { hourlyRate: true, currency: true, name: true, code: true } },
         impactAnalysis: { select: { estimatedHours: true } },
@@ -231,7 +236,11 @@ export const getFinanceDashboard = async (
       },
     }),
     prisma.changeRequest.findMany({
-      where: { status: approvedStatuses, dateOfRequest: { gte: rangeStart, lte: rangeEnd }, ...extraWhere },
+      where: {
+        status: approvedStatuses,
+        dateOfRequest: { gte: rangeStart, lte: rangeEnd },
+        ...extraWhere,
+      },
       include: {
         project: {
           select: {

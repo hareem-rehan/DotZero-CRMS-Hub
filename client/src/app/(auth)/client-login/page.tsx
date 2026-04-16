@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/useAuthStore';
 
-export default function ClientLoginPage() {
+function ClientLoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -68,5 +68,20 @@ export default function ClientLoginPage() {
         Go to login →
       </a>
     </div>
+  );
+}
+
+export default function ClientLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center space-y-3">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#EF323F] border-t-transparent" />
+          <p className="text-sm text-[#5D5B5B]">Signing you in…</p>
+        </div>
+      }
+    >
+      <ClientLoginContent />
+    </Suspense>
   );
 }

@@ -209,11 +209,7 @@ export const dmAssignedEmail = (dmName: string, projectName: string, portalUrl: 
   `),
 });
 
-export const projectAssignedEmail = (
-  poName: string,
-  projectName: string,
-  newCrUrl: string,
-) => ({
+export const projectAssignedEmail = (poName: string, projectName: string, newCrUrl: string) => ({
   subject: `New project assigned — ${projectName}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">New Project Assigned</h2>

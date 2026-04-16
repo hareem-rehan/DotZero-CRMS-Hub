@@ -23,7 +23,12 @@ function useExchangeRates() {
   });
 }
 
-function convertTo(amount: number, from: string, to: string, rates: Record<string, number>): number {
+function convertTo(
+  amount: number,
+  from: string,
+  to: string,
+  rates: Record<string, number>,
+): number {
   const fromRate = rates[from] ?? 1;
   const toRate = rates[to] ?? 1;
   return (amount / fromRate) * toRate;
@@ -72,7 +77,9 @@ export default function FinanceDashboardPage() {
   const optionsFinance = optionsData as FinanceDashboardData | undefined;
   const allBreakdown = optionsFinance?.projectBreakdown ?? [];
   const projectOptions = allBreakdown.map((p) => ({ id: p.projectId, name: p.projectName }));
-  const clientOptions = [...new Set(allBreakdown.map((p) => p.clientName).filter(Boolean) as string[])];
+  const clientOptions = [
+    ...new Set(allBreakdown.map((p) => p.clientName).filter(Boolean) as string[]),
+  ];
 
   const { data, isLoading } = useDashboard({
     dateFrom: dateFrom || undefined,
@@ -100,7 +107,11 @@ export default function FinanceDashboardPage() {
 
   const hasFilter = dateFrom || dateTo || projectId || clientName || currency !== 'USD';
   const clearFilters = () => {
-    setDateFrom(''); setDateTo(''); setProjectId(''); setClientName(''); setCurrency('USD');
+    setDateFrom('');
+    setDateTo('');
+    setProjectId('');
+    setClientName('');
+    setCurrency('USD');
   };
 
   return (
@@ -115,18 +126,14 @@ export default function FinanceDashboardPage() {
             className="rounded-lg border-2 border-[#EF323F] px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#EF323F] bg-white text-[#EF323F]"
           >
             {ALL_CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
-          {ratesLoading && (
-            <span className="text-xs text-[#5D5B5B]">Fetching rates…</span>
-          )}
-          {ratesError && (
-            <span className="text-xs text-red-500">Rates unavailable</span>
-          )}
-          {rates && !ratesLoading && (
-            <span className="text-xs text-green-600">Live rates</span>
-          )}
+          {ratesLoading && <span className="text-xs text-[#5D5B5B]">Fetching rates…</span>}
+          {ratesError && <span className="text-xs text-red-500">Rates unavailable</span>}
+          {rates && !ratesLoading && <span className="text-xs text-green-600">Live rates</span>}
         </div>
 
         {/* Project */}
@@ -137,7 +144,9 @@ export default function FinanceDashboardPage() {
         >
           <option value="">All Projects</option>
           {projectOptions.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
           ))}
         </select>
 
@@ -149,7 +158,9 @@ export default function FinanceDashboardPage() {
         >
           <option value="">All Clients</option>
           {clientOptions.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
 
@@ -192,7 +203,9 @@ export default function FinanceDashboardPage() {
                     {consolidated.count}
                     <ChangeChip value={pct(consolidated.count, consolidatedLast.count)} />
                   </p>
-                  <p className="mt-1 text-xs text-[#5D5B5B]">Last month: {consolidatedLast.count}</p>
+                  <p className="mt-1 text-xs text-[#5D5B5B]">
+                    Last month: {consolidatedLast.count}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-[#E5E5E5] bg-white p-5 shadow-sm">
                   <p className="text-xs text-[#5D5B5B]">Total Hours</p>
@@ -200,7 +213,9 @@ export default function FinanceDashboardPage() {
                     {consolidated.hours}h
                     <ChangeChip value={pct(consolidated.hours, consolidatedLast.hours)} />
                   </p>
-                  <p className="mt-1 text-xs text-[#5D5B5B]">Last month: {consolidatedLast.hours}h</p>
+                  <p className="mt-1 text-xs text-[#5D5B5B]">
+                    Last month: {consolidatedLast.hours}h
+                  </p>
                 </div>
                 <div className="rounded-xl border border-[#E5E5E5] bg-white p-5 shadow-sm">
                   <p className="text-xs text-[#5D5B5B]">Total Cost ({currency})</p>
@@ -228,7 +243,14 @@ export default function FinanceDashboardPage() {
               <table className="w-full text-sm">
                 <thead className="bg-[#F7F7F7]">
                   <tr>
-                    {['Project', 'Client', 'CRs', 'Hours', 'Original Cost', `Cost (${currency})`].map((h) => (
+                    {[
+                      'Project',
+                      'Client',
+                      'CRs',
+                      'Hours',
+                      'Original Cost',
+                      `Cost (${currency})`,
+                    ].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide"
@@ -245,9 +267,7 @@ export default function FinanceDashboardPage() {
                       <td className="px-4 py-3 text-[#5D5B5B]">{row.clientName ?? '—'}</td>
                       <td className="px-4 py-3">{row.count}</td>
                       <td className="px-4 py-3">{row.hours}h</td>
-                      <td className="px-4 py-3 text-[#5D5B5B]">
-                        {fmt(row.cost, row.currency)}
-                      </td>
+                      <td className="px-4 py-3 text-[#5D5B5B]">{fmt(row.cost, row.currency)}</td>
                       <td className="px-4 py-3 font-semibold text-[#2D2D2D]">
                         {fmt(convertTo(row.cost, row.currency, currency, liveRates), currency)}
                       </td>

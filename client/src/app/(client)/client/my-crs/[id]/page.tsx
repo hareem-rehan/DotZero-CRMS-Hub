@@ -40,7 +40,9 @@ function RoleTag({ role }: { role: string }) {
     Finance: 'bg-green-100 text-green-700',
   };
   return (
-    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${colours[label] ?? 'bg-gray-100 text-gray-600'}`}>
+    <span
+      className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${colours[label] ?? 'bg-gray-100 text-gray-600'}`}
+    >
       {label}
     </span>
   );
@@ -453,62 +455,64 @@ export default function CRDetailPage() {
           )}
 
           {/* Deferred result */}
-          {isDeferred && (() => {
-            const deferEntry = [...(cr.statusHistory ?? [])]
-              .reverse()
-              .find((h) => h.toStatus === 'DEFERRED');
-            return (
-              <div className="rounded-xl border border-purple-200 bg-purple-50 p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="mb-2 text-sm font-semibold text-purple-800">Deferred</h3>
-                    {deferEntry?.note && (
-                      <p className="text-sm text-purple-700">{deferEntry.note}</p>
-                    )}
-                    {deferEntry && (
-                      <p className="mt-1 text-xs text-purple-600 flex items-center">
-                        {new Date(deferEntry.changedAt).toLocaleDateString()} ·{' '}
-                        {deferEntry.changedBy.name}
-                        <RoleTag role={deferEntry.changedBy.role} />
-                      </p>
-                    )}
+          {isDeferred &&
+            (() => {
+              const deferEntry = [...(cr.statusHistory ?? [])]
+                .reverse()
+                .find((h) => h.toStatus === 'DEFERRED');
+              return (
+                <div className="rounded-xl border border-purple-200 bg-purple-50 p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold text-purple-800">Deferred</h3>
+                      {deferEntry?.note && (
+                        <p className="text-sm text-purple-700">{deferEntry.note}</p>
+                      )}
+                      {deferEntry && (
+                        <p className="mt-1 text-xs text-purple-600 flex items-center">
+                          {new Date(deferEntry.changedAt).toLocaleDateString()} ·{' '}
+                          {deferEntry.changedBy.name}
+                          <RoleTag role={deferEntry.changedBy.role} />
+                        </p>
+                      )}
+                    </div>
+                    <Button variant="secondary" onClick={openResubmit} className="shrink-0">
+                      Resubmit CR
+                    </Button>
                   </div>
-                  <Button variant="secondary" onClick={openResubmit} className="shrink-0">
-                    Resubmit CR
-                  </Button>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           {/* Declined result */}
-          {isDeclined && (() => {
-            const declineEntry = [...(cr.statusHistory ?? [])]
-              .reverse()
-              .find((h) => h.toStatus === 'DECLINED');
-            return (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="mb-2 text-sm font-semibold text-red-800">Declined</h3>
-                    {declineEntry?.note && (
-                      <p className="text-sm text-red-700">{declineEntry.note}</p>
-                    )}
-                    {declineEntry && (
-                      <p className="mt-1 text-xs text-red-600 flex items-center">
-                        {new Date(declineEntry.changedAt).toLocaleDateString()} ·{' '}
-                        {declineEntry.changedBy.name}
-                        <RoleTag role={declineEntry.changedBy.role} />
-                      </p>
-                    )}
+          {isDeclined &&
+            (() => {
+              const declineEntry = [...(cr.statusHistory ?? [])]
+                .reverse()
+                .find((h) => h.toStatus === 'DECLINED');
+              return (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold text-red-800">Declined</h3>
+                      {declineEntry?.note && (
+                        <p className="text-sm text-red-700">{declineEntry.note}</p>
+                      )}
+                      {declineEntry && (
+                        <p className="mt-1 text-xs text-red-600 flex items-center">
+                          {new Date(declineEntry.changedAt).toLocaleDateString()} ·{' '}
+                          {declineEntry.changedBy.name}
+                          <RoleTag role={declineEntry.changedBy.role} />
+                        </p>
+                      )}
+                    </div>
+                    <Button variant="secondary" onClick={openResubmit} className="shrink-0">
+                      Resubmit CR
+                    </Button>
                   </div>
-                  <Button variant="secondary" onClick={openResubmit} className="shrink-0">
-                    Resubmit CR
-                  </Button>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
         </div>
 
         {/* Sidebar */}
@@ -778,8 +782,8 @@ export default function CRDetailPage() {
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 This CR is currently{' '}
                 <strong>{isApproved ? 'Approved' : isDeclined ? 'Declined' : 'Deferred'}</strong>.
-                Resubmitting will create a new version and send it back to the Delivery Manager
-                for re-estimation with your updated changes.
+                Resubmitting will create a new version and send it back to the Delivery Manager for
+                re-estimation with your updated changes.
               </div>
             )}
             <p className="text-sm text-[#5D5B5B]">

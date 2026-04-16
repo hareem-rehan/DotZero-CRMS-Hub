@@ -25,7 +25,9 @@ function RoleTag({ role }: { role: string }) {
     Finance: 'bg-green-100 text-green-700',
   };
   return (
-    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${colours[label] ?? 'bg-gray-100 text-gray-600'}`}>
+    <span
+      className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${colours[label] ?? 'bg-gray-100 text-gray-600'}`}
+    >
       {label}
     </span>
   );
@@ -187,7 +189,8 @@ export default function DmCRDetailPage() {
                 <span className="text-[#D3D3D3]">→</span>
                 <CRStatusBadge status={h.toStatus} />
                 <span className="text-xs text-[#5D5B5B] flex items-center">
-                  by {h.changedBy.name}<RoleTag role={h.changedBy.role} />
+                  by {h.changedBy.name}
+                  <RoleTag role={h.changedBy.role} />
                 </span>
               </div>
             ))}
