@@ -135,7 +135,7 @@ export const useDashboard = (params?: {
     queryFn: async () => {
       const { data } = await apiClient.get<{
         success: boolean;
-        data: FinanceDashboardData | SADashboardData;
+        data: FinanceDashboardData | SADashboardData | PODashboardData;
       }>('/dashboard', { params });
       return data.data;
     },
