@@ -8,13 +8,85 @@ import { Input } from '@/components/ui/Input';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { SignatureCanvas } from '@/components/ui/SignatureCanvas';
 import { toast } from 'sonner';
-import { useCR, useSaveImpactAnalysis } from '@/hooks/useCRs';
+import { useCR, useSaveImpactAnalysis, useCRVersions } from '@/hooks/useCRs';
 import { sanitizeHtml } from '@/lib/sanitize';
+
+// ─── Snapshot type ────────────────────────────────────────────────────────────
+
+interface CRSnapshot {
+  version: number;
+  title: string;
+  description: string;
+  businessJustification: string;
+  priority: string;
+  changeType: string;
+  requestingParty: string | null;
+  sowRef: string | null;
+}
+
+// ─── Diff helpers ─────────────────────────────────────────────────────────────
+
+function DiffField({
+  label,
+  prev,
+  curr,
+  isHtml = false,
+}: {
+  label: string;
+  prev: string | null | undefined;
+  curr: string | null | undefined;
+  isHtml?: boolean;
+}) {
+  const prevVal = prev ?? '—';
+  const currVal = curr ?? '—';
+  const changed = prevVal !== currVal;
+
+  return (
+    <div className="grid grid-cols-2 gap-0 border-b border-[#E5E5E5] last:border-0">
+      {/* Previous */}
+      <div className="border-r border-[#E5E5E5] bg-[#F7F7F7] p-4">
+        <p className="mb-1 text-xs font-medium text-[#5D5B5B]">{label}</p>
+        {isHtml ? (
+          <div
+            className="prose prose-sm max-w-none text-sm text-[#2D2D2D]"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(prevVal) }}
+          />
+        ) : (
+          <p className="text-sm text-[#2D2D2D]">{prevVal}</p>
+        )}
+      </div>
+      {/* Current — green if changed */}
+      <div className={`p-4 ${changed ? 'bg-green-50' : 'bg-white'}`}>
+        <p className="mb-1 flex items-center gap-2 text-xs font-medium text-[#5D5B5B]">
+          {label}
+          {changed && (
+            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+              Changed
+            </span>
+          )}
+        </p>
+        {isHtml ? (
+          <div
+            className={`prose prose-sm max-w-none text-sm ${changed ? 'text-green-900' : 'text-[#2D2D2D]'}`}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(currVal) }}
+          />
+        ) : (
+          <p className={`text-sm ${changed ? 'font-medium text-green-800' : 'text-[#2D2D2D]'}`}>
+            {currVal}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DmCREstimatePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: cr, isLoading } = useCR(id);
+  const { data: versions } = useCRVersions(id);
 
   const ia = cr?.impactAnalysis;
 
@@ -25,6 +97,7 @@ export default function DmCREstimatePage() {
   const [resourcesRequired, setResourcesRequired] = useState('');
   const [recommendation, setRecommendation] = useState('');
   const [dmSignature, setDmSignature] = useState('');
+  const [showDiff, setShowDiff] = useState(true);
 
   // Pre-fill from existing draft
   const [prefilled, setPrefilled] = useState(false);
@@ -72,13 +145,106 @@ export default function DmCREstimatePage() {
   if (!cr) return null;
 
   const isReadOnly = !['UNDER_REVIEW', 'RESUBMITTED'].includes(cr.status);
+  const isResubmitted = cr.status === 'RESUBMITTED';
+
+  // Get the latest snapshot (highest versionNumber) for comparison
+  const latestSnapshot =
+    versions && versions.length > 0
+      ? (versions.reduce((a, b) => (a.versionNumber > b.versionNumber ? a : b))
+          .snapshotJson as CRSnapshot)
+      : null;
 
   return (
     <PageWrapper title={`${cr.crNumber} — Estimation`}>
       <div className="space-y-6">
-        {/* PO Section — read-only, grey background */}
+        {/* ── Resubmission Diff Panel ── */}
+        {isResubmitted && latestSnapshot && (
+          <div className="rounded-xl border border-green-200 bg-white shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-green-200 bg-green-50 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100">
+                  <svg
+                    className="h-4 w-4 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-sm font-semibold text-green-900">
+                    Resubmission — Version {latestSnapshot.version} → {cr.version}
+                  </h2>
+                  <p className="text-xs text-green-700">
+                    PO has resubmitted this CR. Green fields indicate what changed.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDiff((v) => !v)}
+                className="text-xs font-medium text-green-700 hover:text-green-900 underline"
+              >
+                {showDiff ? 'Hide comparison' : 'Show comparison'}
+              </button>
+            </div>
+
+            {showDiff && (
+              <>
+                {/* Column headers */}
+                <div className="grid grid-cols-2 gap-0 border-b border-[#E5E5E5] bg-[#FAFAFA]">
+                  <div className="border-r border-[#E5E5E5] px-4 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#5D5B5B]">
+                      Previous (v{latestSnapshot.version})
+                    </p>
+                  </div>
+                  <div className="px-4 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
+                      Current (v{cr.version}) — New Changes
+                    </p>
+                  </div>
+                </div>
+
+                {/* Diff rows */}
+                <DiffField label="Title" prev={latestSnapshot.title} curr={cr.title} />
+                <DiffField label="Priority" prev={latestSnapshot.priority} curr={cr.priority} />
+                <DiffField
+                  label="Change Type"
+                  prev={latestSnapshot.changeType}
+                  curr={cr.changeType}
+                />
+                <DiffField
+                  label="Requesting Party"
+                  prev={latestSnapshot.requestingParty}
+                  curr={cr.requestingParty}
+                />
+                <DiffField label="SOW Reference" prev={latestSnapshot.sowRef} curr={cr.sowRef} />
+                <DiffField
+                  label="Description"
+                  prev={latestSnapshot.description}
+                  curr={cr.description}
+                  isHtml
+                />
+                <DiffField
+                  label="Business Justification"
+                  prev={latestSnapshot.businessJustification}
+                  curr={cr.businessJustification}
+                  isHtml
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── CR Details ── */}
         <div className="rounded-xl border border-[#E5E5E5] bg-[#F7F7F7] p-6">
-          <h2 className="mb-4 text-sm font-semibold text-[#5D5B5B] uppercase tracking-wide">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#5D5B5B]">
             Change Request Details
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -96,7 +262,10 @@ export default function DmCREstimatePage() {
             </div>
             <div>
               <p className="text-xs text-[#5D5B5B]">Status</p>
-              <CRStatusBadge status={cr.status} />
+              <CRStatusBadge
+                status={cr.status}
+                overrides={{ SUBMITTED: { label: 'Pending Estimation', variant: 'blue' } }}
+              />
             </div>
             <div>
               <p className="text-xs text-[#5D5B5B]">Change Type</p>
@@ -127,7 +296,7 @@ export default function DmCREstimatePage() {
           </div>
           {cr.attachments.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs text-[#5D5B5B] mb-2">Attachments</p>
+              <p className="mb-2 text-xs text-[#5D5B5B]">Attachments</p>
               <div className="flex flex-wrap gap-2">
                 {cr.attachments.map((a) => (
                   <a
@@ -145,7 +314,7 @@ export default function DmCREstimatePage() {
           )}
         </div>
 
-        {/* DM Estimation Form */}
+        {/* ── DM Estimation Form ── */}
         <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-base font-semibold text-[#2D2D2D]">
             {isReadOnly ? 'Estimation' : 'Estimation Form'}

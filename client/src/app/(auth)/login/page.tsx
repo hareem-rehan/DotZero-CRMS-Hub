@@ -1,12 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useLogin } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/useAuthStore';
 import { isAxiosError } from 'axios';
+
+const ROLE_HOME: Record<string, string> = {
+  SUPER_ADMIN: '/admin/dashboard',
+  PRODUCT_OWNER: '/client/my-crs',
+  DELIVERY_MANAGER: '/dm/pending',
+  FINANCE: '/finance/cr-listing',
+};
 
 interface LoginForm {
   email: string;
@@ -14,9 +23,21 @@ interface LoginForm {
   rememberMe: boolean;
 }
 
-export default function LoginPage() {
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') ?? undefined;
+  const { user, token, isHydrated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
-  const { mutate: login, isPending, error } = useLogin();
+  const { mutate: login, isPending, error } = useLogin(redirectTo);
+
+  // Already logged in — send them to their role home (ignore redirect for security)
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (token && user) {
+      router.replace(ROLE_HOME[user.role] ?? '/');
+    }
+  }, [isHydrated, token, user, router]);
 
   const {
     register,
@@ -125,5 +146,13 @@ export default function LoginPage() {
         </Button>
       </form>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

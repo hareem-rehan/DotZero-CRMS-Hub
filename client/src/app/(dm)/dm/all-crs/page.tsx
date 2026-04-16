@@ -11,7 +11,7 @@ import { useProjects } from '@/hooks/useProjects';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
-  { value: 'SUBMITTED', label: 'Submitted' },
+  { value: 'SUBMITTED', label: 'Pending Estimation' },
   { value: 'UNDER_REVIEW', label: 'Under Review' },
   { value: 'ESTIMATED', label: 'Estimated' },
   { value: 'RESUBMITTED', label: 'Resubmitted' },
@@ -86,7 +86,12 @@ export default function DmAllCRsPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <CRStatusBadge status={row.status} />,
+      render: (row) => (
+        <CRStatusBadge
+          status={row.status}
+          overrides={{ SUBMITTED: { label: 'Pending Estimation', variant: 'blue' } }}
+        />
+      ),
     },
     {
       key: 'updatedAt',

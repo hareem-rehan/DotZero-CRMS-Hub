@@ -7,8 +7,12 @@ export const dashboardRouter = Router();
 
 dashboardRouter.use(authenticateToken);
 
-// GET /api/v1/dashboard — SA + Finance
-dashboardRouter.get('/', roleGuard(['SUPER_ADMIN', 'FINANCE']), dashboardController.getDashboard);
+// GET /api/v1/dashboard — SA + Finance + PO
+dashboardRouter.get(
+  '/',
+  roleGuard(['SUPER_ADMIN', 'FINANCE', 'PRODUCT_OWNER']),
+  dashboardController.getDashboard,
+);
 
 // GET /api/v1/dashboard/finance/crs — Finance CR listing with cost data
 dashboardRouter.get(

@@ -16,6 +16,7 @@ const CURRENCY_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
+  { value: 'DRAFT', label: 'Draft' },
   { value: 'ACTIVE', label: 'Active' },
   { value: 'ON_HOLD', label: 'On Hold' },
   { value: 'DELIVERED', label: 'Delivered' },
@@ -39,7 +40,9 @@ interface ProjectFormProps {
   defaultValues?: Partial<ProjectFormValues>;
   isEdit?: boolean;
   loading?: boolean;
+  draftLoading?: boolean;
   onSubmit: (formData: FormData) => void;
+  onDraft?: (formData: FormData) => void;
   onCancel: () => void;
 }
 
@@ -47,7 +50,9 @@ export function ProjectForm({
   defaultValues,
   isEdit,
   loading,
+  draftLoading,
   onSubmit,
+  onDraft,
   onCancel,
 }: ProjectFormProps) {
   const { data: dmUsers = [] } = useDmUsers();
@@ -112,25 +117,36 @@ export function ProjectForm({
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const buildFormData = (status: string): FormData => {
     const fd = new FormData();
     fd.append('name', values.name);
-    fd.append('clientName', values.clientName);
+    if (values.clientName) fd.append('clientName', values.clientName);
     if (values.clientEmail) fd.append('clientEmail', values.clientEmail);
     if (!isEdit && values.code) fd.append('code', values.code.toUpperCase());
-    fd.append('hourlyRate', values.hourlyRate);
+    if (values.hourlyRate) fd.append('hourlyRate', values.hourlyRate);
     fd.append('currency', values.currency);
-    fd.append('status', values.status);
+    fd.append('status', status);
     if (values.startDate) fd.append('startDate', new Date(values.startDate).toISOString());
     if (values.assignedDmId) fd.append('assignedDmId', values.assignedDmId);
     fd.append('showRateToDm', String(values.showRateToDm));
     fd.append('clientMemberEmails', JSON.stringify(values.clientMemberEmails));
     files.forEach((f) => fd.append('attachments', f));
+    return fd;
+  };
 
-    onSubmit(fd);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    onSubmit(buildFormData(values.status));
+  };
+
+  const handleSaveDraft = () => {
+    if (!values.name.trim()) {
+      setErrors({ name: 'Project name is required to save a draft' });
+      return;
+    }
+    setErrors({});
+    onDraft?.(buildFormData('DRAFT'));
   };
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -340,10 +356,21 @@ export function ProjectForm({
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading || draftLoading}>
           Cancel
         </Button>
-        <Button type="submit" loading={loading}>
+        {!isEdit && onDraft && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleSaveDraft}
+            loading={draftLoading}
+            disabled={loading}
+          >
+            Save as Draft
+          </Button>
+        )}
+        <Button type="submit" loading={loading} disabled={draftLoading}>
           {isEdit ? 'Save Changes' : 'Create Project'}
         </Button>
       </div>

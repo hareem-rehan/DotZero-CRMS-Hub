@@ -132,6 +132,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { label: 'Settings', href: '/admin/settings', icon: icons.settings },
   ],
   PRODUCT_OWNER: [
+    { label: 'Dashboard', href: '/client/dashboard', icon: icons.dashboard },
     { label: 'My CRs', href: '/client/my-crs', icon: icons.crs },
     { label: 'Profile', href: '/profile', icon: icons.profile },
   ],

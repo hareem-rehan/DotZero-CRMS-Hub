@@ -7,7 +7,7 @@ export const apiClient = axios.create({
   },
 });
 
-// JWT interceptor — token attached in useAuthStore setup (P-02B)
+// JWT interceptor — attach token from localStorage
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const raw = localStorage.getItem('auth-store');
@@ -25,3 +25,15 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// 401 interceptor — clear auth and redirect to login on session expiry
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (typeof window !== 'undefined' && error?.response?.status === 401) {
+      localStorage.removeItem('auth-store');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  },
+);

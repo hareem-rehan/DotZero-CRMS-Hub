@@ -9,6 +9,30 @@ import { toast } from 'sonner';
 import { useCR, useAddNote } from '@/hooks/useCRs';
 import { sanitizeHtml } from '@/lib/sanitize';
 
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: 'SA',
+  PRODUCT_OWNER: 'PO',
+  DELIVERY_MANAGER: 'DM',
+  FINANCE: 'Finance',
+};
+
+function RoleTag({ role }: { role: string }) {
+  const label = ROLE_LABEL[role] ?? role;
+  const colours: Record<string, string> = {
+    PO: 'bg-blue-100 text-blue-700',
+    DM: 'bg-amber-100 text-amber-700',
+    SA: 'bg-purple-100 text-purple-700',
+    Finance: 'bg-green-100 text-green-700',
+  };
+  return (
+    <span
+      className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${colours[label] ?? 'bg-gray-100 text-gray-600'}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function DmCRDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: cr, isLoading } = useCR(id);
@@ -164,7 +188,10 @@ export default function DmCRDetailPage() {
                 </span>
                 <span className="text-[#D3D3D3]">→</span>
                 <CRStatusBadge status={h.toStatus} />
-                <span className="text-xs text-[#5D5B5B]">by {h.changedBy.name}</span>
+                <span className="text-xs text-[#5D5B5B] flex items-center">
+                  by {h.changedBy.name}
+                  <RoleTag role={h.changedBy.role} />
+                </span>
               </div>
             ))}
           </div>

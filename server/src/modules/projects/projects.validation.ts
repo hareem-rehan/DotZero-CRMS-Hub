@@ -5,7 +5,8 @@ const coercedNumber = z.preprocess(
   (v) => (v === '' || v === undefined || v === null ? undefined : Number(v)),
   z
     .number({ invalid_type_error: 'Hourly rate must be a number' })
-    .positive('Hourly rate must be positive'),
+    .nonnegative('Hourly rate must be 0 or positive')
+    .optional(),
 );
 
 const coercedBoolean = z.preprocess((v) => v === 'true' || v === true, z.boolean());
@@ -27,7 +28,7 @@ const coercedEmailArray = z.preprocess(
 
 export const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(255),
-  clientName: z.string().min(1, 'Client name is required').max(255),
+  clientName: z.string().max(255).optional(),
   code: z
     .string()
     .min(2, 'Code must be at least 2 characters')
@@ -39,7 +40,7 @@ export const createProjectSchema = z.object({
   startDate: z.string().datetime().optional().nullable(),
   assignedDmId: z.string().cuid().optional().nullable(),
   showRateToDm: coercedBoolean.default(false),
-  status: z.enum(['ACTIVE', 'ON_HOLD', 'DELIVERED']).default('ACTIVE'),
+  status: z.enum(['DRAFT', 'ACTIVE', 'ON_HOLD', 'DELIVERED']).default('ACTIVE'),
   clientEmail: z.string().email('Invalid client email').optional().nullable(),
   clientMemberEmails: coercedEmailArray,
 });
@@ -47,7 +48,7 @@ export const createProjectSchema = z.object({
 export const updateProjectSchema = createProjectSchema
   .omit({ code: true })
   .extend({
-    status: z.enum(['ACTIVE', 'ON_HOLD', 'DELIVERED', 'ARCHIVED']).optional(),
+    status: z.enum(['DRAFT', 'ACTIVE', 'ON_HOLD', 'DELIVERED', 'ARCHIVED']).optional(),
   })
   .partial();
 

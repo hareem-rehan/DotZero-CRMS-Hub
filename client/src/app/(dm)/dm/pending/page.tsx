@@ -68,7 +68,12 @@ export default function DmPendingPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <CRStatusBadge status={row.status} />,
+      render: (row) => (
+        <CRStatusBadge
+          status={row.status}
+          overrides={{ SUBMITTED: { label: 'Pending Estimation', variant: 'blue' } }}
+        />
+      ),
     },
     {
       key: 'dateOfRequest',

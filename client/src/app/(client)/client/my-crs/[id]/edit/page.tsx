@@ -36,10 +36,7 @@ const PRIORITY_OPTIONS = [
 const TYPE_OPTIONS = [
   { value: 'SCOPE', label: 'Scope' },
   { value: 'TIMELINE', label: 'Timeline' },
-  { value: 'BUDGET', label: 'Budget' },
-  { value: 'RESOURCE', label: 'Resource' },
-  { value: 'TECHNICAL', label: 'Technical' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'BOTH', label: 'Scope & Timeline' },
 ];
 
 export default function EditCRPage() {
@@ -347,7 +344,7 @@ export default function EditCRPage() {
               Save Draft
             </Button>
             <Button type="button" onClick={() => setConfirmSubmit(true)} disabled={isActionLoading}>
-              Submit for Review
+              Submit for Estimation
             </Button>
           </div>
         </div>

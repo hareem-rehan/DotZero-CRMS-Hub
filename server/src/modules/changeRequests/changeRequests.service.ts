@@ -106,7 +106,7 @@ export const listCRs = async (
       ...new Set([...assignments.map((a) => a.projectId), ...assignedProjects.map((p) => p.id)]),
     ];
     where.projectId = { in: projectIds };
-    where.status = { in: ['SUBMITTED', 'UNDER_REVIEW', 'ESTIMATED', 'RESUBMITTED'] };
+    // No status restriction — DM All CRs shows full history across all statuses
   } else if (actorRole === 'FINANCE') {
     where.status = { in: ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] };
   }
@@ -164,7 +164,7 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
       approval: true,
       statusHistory: {
         orderBy: { changedAt: 'asc' },
-        include: { changedBy: { select: { id: true, name: true } } },
+        include: { changedBy: { select: { id: true, name: true, role: true } } },
       },
       internalNotes:
         actorRole === 'PRODUCT_OWNER'
@@ -476,6 +476,51 @@ export const declineCR = async (
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
     }
   }
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── Defer ────────────────────────────────────────────────────────────────────
+
+export const deferCR = async (
+  id: string,
+  actorId: string,
+  actorRole: string,
+  deferReason: string,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      project: { select: { name: true, assignedDmId: true } },
+      submittedBy: { select: { id: true } },
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
+    throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'DEFERRED');
+  if (!deferReason?.trim()) throw new AppError(400, 'Defer reason is required');
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: { status: 'DEFERRED' } }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status as never,
+        toStatus: 'DEFERRED',
+        changedById: actorId,
+        reason: deferReason,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_DEFERRED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
 
   return prisma.changeRequest.findUnique({ where: { id } });
 };

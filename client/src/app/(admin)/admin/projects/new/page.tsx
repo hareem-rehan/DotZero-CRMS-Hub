@@ -4,22 +4,36 @@ import { useRouter } from 'next/navigation';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
 import { ProjectForm } from '@/components/projects/ProjectForm';
 import { useCreateProject } from '@/hooks/useProjects';
+import { useState } from 'react';
 
 export default function NewProjectPage() {
   const router = useRouter();
   const createMutation = useCreateProject();
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
     await createMutation.mutateAsync(formData);
     router.push('/admin/projects');
   };
 
+  const handleDraft = async (formData: FormData) => {
+    setIsDraftSaving(true);
+    try {
+      await createMutation.mutateAsync(formData);
+      router.push('/admin/projects');
+    } finally {
+      setIsDraftSaving(false);
+    }
+  };
+
   return (
     <PageWrapper title="New Project">
       <div className="max-w-3xl rounded-lg border border-[#D3D3D3] bg-white p-6">
         <ProjectForm
-          loading={createMutation.isPending}
+          loading={createMutation.isPending && !isDraftSaving}
+          draftLoading={isDraftSaving}
           onSubmit={handleSubmit}
+          onDraft={handleDraft}
           onCancel={() => router.push('/admin/projects')}
         />
         {createMutation.isError && (

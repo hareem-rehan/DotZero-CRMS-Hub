@@ -35,7 +35,7 @@ const ROLE_REDIRECT: Record<string, string> = {
   FINANCE: '/finance/cr-listing',
 };
 
-export const useLogin = () => {
+export const useLogin = (redirectTo?: string) => {
   const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
 
@@ -49,8 +49,13 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       setAuth(data.user, data.token);
-      const redirect = ROLE_REDIRECT[data.user.role] ?? '/';
-      router.push(redirect);
+      // Use the preserved redirect URL if it belongs to the correct role portal,
+      // otherwise fall back to the default role home page.
+      const roleDefault = ROLE_REDIRECT[data.user.role] ?? '/';
+      const rolePrefix = roleDefault.split('/')[1]; // e.g. "client", "admin", "dm"
+      const destination =
+        redirectTo && redirectTo.startsWith(`/${rolePrefix}`) ? redirectTo : roleDefault;
+      router.push(destination);
     },
   });
 };
