@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "==> Installing root dependencies (zod, @prisma/client, ts-node for seed)..."
+echo "==> Installing root dependencies (zod, @prisma/client for shared/validators)..."
 npm install --include=dev
 
 echo "==> Installing server dependencies (includes @types/*)..."
@@ -10,10 +10,6 @@ npm install --include=dev
 
 echo "==> Generating Prisma client (must run before tsc)..."
 npx prisma generate --schema ../prisma/schema.prisma
-
-echo "==> Copying generated Prisma client to root node_modules (for seed)..."
-mkdir -p ../node_modules/.prisma
-cp -r ./node_modules/.prisma/client ../node_modules/.prisma/client
 
 echo "==> Compiling TypeScript..."
 npm run build
