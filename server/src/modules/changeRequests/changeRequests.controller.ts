@@ -3,7 +3,7 @@ import * as crService from './changeRequests.service';
 
 export const list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { projectId, status, changeType, priority, search, page, pageSize } = req.query;
+    const { projectId, status, changeType, priority, search, page, pageSize, assignedToMe } = req.query;
     const result = await crService.listCRs(req.user?.userId as string, req.user?.role as string, {
       projectId: projectId as string | undefined,
       status: status as string | undefined,
@@ -12,6 +12,7 @@ export const list = async (req: Request, res: Response, next: NextFunction): Pro
       search: search as string | undefined,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
+      assignedToMe: assignedToMe === 'true',
     });
     res.json({ success: true, data: result, error: null, meta: null });
   } catch (err) {

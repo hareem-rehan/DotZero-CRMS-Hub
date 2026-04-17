@@ -13,7 +13,7 @@ interface InviteModalProps {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'PRODUCT_OWNER', label: 'Product Owner (Client)' },
+  { value: 'PRODUCT_OWNER', label: 'Product Owner (PO)' },
   { value: 'DELIVERY_MANAGER', label: 'Delivery Manager' },
   { value: 'FINANCE', label: 'Finance' },
 ];
@@ -81,7 +81,7 @@ export function InviteModal({ open, onClose }: InviteModalProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="client@example.com"
+              placeholder="po@example.com"
             />
             <Select
               label="Project *"

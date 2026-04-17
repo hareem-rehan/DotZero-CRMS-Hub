@@ -245,12 +245,25 @@ export const updateProject = async (
 
   // Auto-invite: always run sendInvitationIfNotExists for clientEmail (handles
   // re-invites after user deletion) and for newly added clientMemberEmails.
+  // Also run for ALL existing emails when a project transitions out of DRAFT status,
+  // because invitations are skipped during DRAFT project creation.
+  const wasDraft = project.status === ProjectStatus.DRAFT;
+  const isNowActive = input.status !== undefined && input.status !== ProjectStatus.DRAFT;
+  const publishingFromDraft = wasDraft && isNowActive;
+
   const inviteTargets = new Set<string>();
   if (input.clientEmail) inviteTargets.add(input.clientEmail.toLowerCase());
   if (input.clientMemberEmails) {
     input.clientMemberEmails.forEach((e) => {
-      if (!prevMemberEmails.has(e.toLowerCase())) inviteTargets.add(e.toLowerCase());
+      // Include all emails when publishing from DRAFT, otherwise only newly added ones
+      if (publishingFromDraft || !prevMemberEmails.has(e.toLowerCase())) {
+        inviteTargets.add(e.toLowerCase());
+      }
     });
+  }
+  // When publishing from DRAFT, also process pre-existing clientEmail
+  if (publishingFromDraft && updated.clientEmail) {
+    inviteTargets.add(updated.clientEmail.toLowerCase());
   }
   for (const email of inviteTargets) {
     await sendInvitationIfNotExists(email, id, actorId);
@@ -416,25 +429,40 @@ export const generateClientLoginLinks = async (projectId: string, actorId: strin
 // ─── My Projects (PO / DM scoped) ────────────────────────────────────────────
 
 export const getMyProjects = async (userId: string) => {
-  const assignments = await prisma.projectUser.findMany({
-    where: { userId },
-    include: {
-      project: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          status: true,
-          currency: true,
-          attachments: {
-            select: { id: true, fileName: true, fileUrl: true, fileSize: true, mimeType: true },
-          },
-        },
-      },
+  const projectSelect = {
+    id: true,
+    name: true,
+    code: true,
+    status: true,
+    currency: true,
+    attachments: {
+      select: { id: true, fileName: true, fileUrl: true, fileSize: true, mimeType: true },
     },
+  };
+
+  // Fetch via projectUser assignments AND projects where the user is the assigned DM
+  const [assignments, assignedDmProjects] = await Promise.all([
+    prisma.projectUser.findMany({
+      where: { userId },
+      include: { project: { select: projectSelect } },
+    }),
+    prisma.project.findMany({
+      where: { assignedDmId: userId },
+      select: projectSelect,
+    }),
+  ]);
+
+  const seen = new Set<string>();
+  const allProjects = [
+    ...assignments.map((a) => a.project),
+    ...assignedDmProjects,
+  ].filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return p.status === 'ACTIVE';
   });
 
-  return assignments.map((a) => a.project).filter((p) => p.status === 'ACTIVE');
+  return allProjects;
 };
 
 // ─── DM dropdown ──────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import {
   crApprovedEmail,
   crDeclinedEmail,
   crResubmittedEmail,
+  crCancelledEmail,
   statusChangedEmail,
 } from '../../utils/emailTemplates';
 import { ALLOWED_TRANSITIONS } from './changeRequests.validation';
@@ -77,6 +78,7 @@ export const listCRs = async (
     search?: string;
     page?: number;
     pageSize?: number;
+    assignedToMe?: boolean;
   },
 ) => {
   const page = Math.max(1, query.page ?? 1);
@@ -110,7 +112,17 @@ export const listCRs = async (
   } else if (actorRole === 'FINANCE') {
     where.status = { in: ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] };
   }
-  // SUPER_ADMIN: no restriction
+  // SUPER_ADMIN: no restriction, but support "My Project CRs" view
+  if (actorRole === 'SUPER_ADMIN' && query.assignedToMe) {
+    const [assignments, assignedProjects] = await Promise.all([
+      prisma.projectUser.findMany({ where: { userId: actorId }, select: { projectId: true } }),
+      prisma.project.findMany({ where: { assignedDmId: actorId }, select: { id: true } }),
+    ]);
+    const myProjectIds = [
+      ...new Set([...assignments.map((a) => a.projectId), ...assignedProjects.map((p) => p.id)]),
+    ];
+    where.projectId = { in: myProjectIds };
+  }
 
   if (query.projectId) where.projectId = query.projectId;
   if (query.status) where.status = query.status;
@@ -538,8 +550,9 @@ export const resubmitCR = async (
     include: {
       project: { select: { name: true, assignedDmId: true } },
       submittedBy: { select: { id: true } },
-      impactAnalysis: true,
+      impactAnalysis: { include: { dm: { select: { id: true, name: true } } } },
       attachments: true,
+      statusHistory: { orderBy: { changedAt: 'desc' }, take: 10 },
     },
   });
   if (!cr) throw new AppError(404, 'Change request not found');
@@ -548,6 +561,33 @@ export const resubmitCR = async (
     if (!projectIds.includes(cr.projectId)) throw new AppError(403, 'Access denied');
   }
   assertTransition(cr.status, 'RESUBMITTED');
+
+  // ── Resubmission limits (PO only) ──────────────────────────────────────────
+  // version 1 = original, version 2 = 1st resubmission, version 3 = 2nd resubmission
+  // Max 2 resubmissions (version must stay <= 3)
+  const MAX_RESUBMISSIONS = 2;
+  const resubmissionCount = cr.version - 1; // how many times already resubmitted
+  if (resubmissionCount >= MAX_RESUBMISSIONS) {
+    throw new AppError(
+      400,
+      `This CR has already been resubmitted ${MAX_RESUBMISSIONS} time(s). No further resubmissions are allowed.`,
+    );
+  }
+
+  // 72-hour window: measured from when the CR last moved into ESTIMATED, DECLINED, or DEFERRED
+  const triggerEntry = cr.statusHistory.find((h) =>
+    ['ESTIMATED', 'DECLINED', 'DEFERRED'].includes(h.toStatus as string),
+  );
+  if (triggerEntry) {
+    const hoursSinceTrigger =
+      (Date.now() - new Date(triggerEntry.changedAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceTrigger > 72) {
+      throw new AppError(
+        400,
+        `The 72-hour resubmission window has expired. This CR can no longer be resubmitted.`,
+      );
+    }
+  }
 
   const newVersion = cr.version + 1;
 
@@ -629,7 +669,10 @@ export const resubmitCR = async (
 // ─── Cancel ───────────────────────────────────────────────────────────────────
 
 export const cancelCR = async (id: string, actorId: string, actorRole: string, reason?: string) => {
-  const cr = await prisma.changeRequest.findUnique({ where: { id } });
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true, assignedDmId: true } } },
+  });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
     throw new AppError(403, 'Access denied');
@@ -655,6 +698,19 @@ export const cancelCR = async (id: string, actorId: string, actorRole: string, r
     entityId: id,
     metadata: { crNumber: cr.crNumber },
   });
+
+  // Notify DM if the CR was in a state where DM action was pending or in progress
+  const dmActionStates = ['SUBMITTED', 'UNDER_REVIEW', 'RESUBMITTED'];
+  if (dmActionStates.includes(cr.status) && cr.project.assignedDmId) {
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.project.assignedDmId },
+      select: { email: true, name: true },
+    });
+    if (dm) {
+      const tpl = crCancelledEmail(dm.name, cr.crNumber, cr.project.name, reason);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
 
   return prisma.changeRequest.findUnique({ where: { id } });
 };

@@ -202,7 +202,7 @@ export default function ProjectsListPage() {
   const deleteMutation = useDeleteProject();
 
   const clientNameOptions = [
-    { value: '', label: 'All Clients' },
+    { value: '', label: 'All POs' },
     ...clientNames.map((n) => ({ value: n, label: n })),
   ];
 
@@ -220,7 +220,7 @@ export default function ProjectsListPage() {
         </Link>
       ),
     },
-    { key: 'clientName', header: 'Client', sortable: true },
+    { key: 'clientName', header: 'PO', sortable: true },
     { key: 'code', header: 'Code', sortable: true },
     {
       key: 'status',

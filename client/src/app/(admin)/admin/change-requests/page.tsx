@@ -7,7 +7,7 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
 import { useCRs, CRSummary } from '@/hooks/useCRs';
-import { useProjects } from '@/hooks/useProjects';
+import { useProjects, useMyProjects } from '@/hooks/useProjects';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
@@ -39,7 +39,15 @@ const PRIORITY_OPTIONS = [
   { value: 'LOW', label: 'Low' },
 ];
 
-export default function AllCRsPage() {
+// ─── Shared CRs table ────────────────────────────────────────────────────────
+
+function CRsTable({
+  assignedToMe = false,
+  projectOptions,
+}: {
+  assignedToMe?: boolean;
+  projectOptions: { value: string; label: string }[];
+}) {
   const [search, setSearch] = useState('');
   const [projectId, setProjectId] = useState('');
   const [status, setStatus] = useState('');
@@ -55,13 +63,8 @@ export default function AllCRsPage() {
     priority: priority || undefined,
     page,
     pageSize: 20,
+    assignedToMe: assignedToMe || undefined,
   });
-
-  const { data: projectsData } = useProjects({ pageSize: 100 });
-  const projectOptions = [
-    { value: '', label: 'All Projects' },
-    ...(projectsData?.projects ?? []).map((p) => ({ value: p.id, label: `${p.name} (${p.code})` })),
-  ];
 
   const columns: Column<CRSummary>[] = [
     {
@@ -123,7 +126,7 @@ export default function AllCRsPage() {
   ];
 
   return (
-    <PageWrapper title="All Change Requests">
+    <>
       <div className="mb-4 flex flex-wrap gap-3">
         <input
           type="text"
@@ -181,7 +184,6 @@ export default function AllCRsPage() {
         emptyMessage="No change requests found."
       />
 
-      {/* Pagination */}
       {data && data.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm text-[#5D5B5B]">
           <span>
@@ -204,6 +206,61 @@ export default function AllCRsPage() {
             </button>
           </div>
         </div>
+      )}
+    </>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function AllCRsPage() {
+  const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
+
+  const { data: projectsData } = useProjects({ pageSize: 100 });
+  const { data: myProjects } = useMyProjects();
+
+  const hasMyProjects = (myProjects ?? []).length > 0;
+
+  const allProjectOptions = [
+    { value: '', label: 'All Projects' },
+    ...(projectsData?.projects ?? []).map((p) => ({ value: p.id, label: `${p.name} (${p.code})` })),
+  ];
+
+  const myProjectOptions = [
+    { value: '', label: 'All My Projects' },
+    ...(myProjects ?? []).map((p) => ({ value: p.id, label: p.name })),
+  ];
+
+  const tabs = [
+    { key: 'all' as const, label: 'All CRs' },
+    ...(hasMyProjects ? [{ key: 'mine' as const, label: 'My Project CRs' }] : []),
+  ];
+
+  return (
+    <PageWrapper title="All Change Requests">
+      {/* Tabs — only rendered when SA has DM-assigned projects */}
+      {hasMyProjects && (
+        <div className="mb-5 flex gap-1 border-b border-[#E5E5E5]">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                activeTab === tab.key
+                  ? 'border-[#EF323F] text-[#EF323F]'
+                  : 'border-transparent text-[#5D5B5B] hover:text-[#2D2D2D]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'all' ? (
+        <CRsTable projectOptions={allProjectOptions} />
+      ) : (
+        <CRsTable assignedToMe projectOptions={myProjectOptions} />
       )}
     </PageWrapper>
   );

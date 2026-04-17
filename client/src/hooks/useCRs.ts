@@ -65,7 +65,7 @@ export interface CRDetail extends CRSummary {
     fromStatus: string;
     toStatus: string;
     changedAt: string;
-    note: string | null;
+    reason: string | null;
     changedBy: { id: string; name: string; role: string };
   }>;
   internalNotes?: Array<{
@@ -123,6 +123,7 @@ export const useCRs = (params?: {
   search?: string;
   page?: number;
   pageSize?: number;
+  assignedToMe?: boolean;
 }) => {
   return useQuery({
     queryKey: crKeys.list(params),

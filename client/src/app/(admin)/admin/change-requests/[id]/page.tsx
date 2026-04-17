@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
@@ -8,10 +9,185 @@ import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { useCR, useCRVersions } from '@/hooks/useCRs';
 import { sanitizeHtml } from '@/lib/sanitize';
 
+// ─── Version snapshot shape ───────────────────────────────────────────────────
+
+interface VersionSnapshot {
+  version: number;
+  title: string;
+  description: string | null;
+  businessJustification: string | null;
+  priority: string | null;
+  changeType: string | null;
+  requestingParty: string | null;
+  sowRef: string | null;
+  status: string;
+  attachments?: Array<{ id: string; fileName: string; fileUrl: string }>;
+  snapshotAt: string;
+}
+
+interface CRVersionRow {
+  id: string;
+  versionNumber: number;
+  snapshotJson: unknown;
+  createdAt: string;
+  createdBy: { id: string; name: string };
+}
+
+// ─── Version Modal ────────────────────────────────────────────────────────────
+
+function VersionModal({
+  version,
+  onClose,
+}: {
+  version: CRVersionRow;
+  onClose: () => void;
+}) {
+  const snap = version.snapshotJson as VersionSnapshot;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#E5E5E5] bg-white px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-[#2D2D2D]">
+              Version {version.versionNumber} Snapshot
+            </h2>
+            <p className="mt-0.5 text-xs text-[#5D5B5B]">
+              Saved by {version.createdBy?.name} on{' '}
+              {new Date(version.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-[#5D5B5B] hover:bg-[#F7F7F7] transition-colors"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-5 p-6">
+          {/* Meta grid */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <SnapField label="Status">
+              <CRStatusBadge status={snap.status} />
+            </SnapField>
+            {snap.priority && (
+              <SnapField label="Priority">
+                <CRPriorityBadge priority={snap.priority} />
+              </SnapField>
+            )}
+            {snap.changeType && (
+              <SnapField label="Change Type" value={snap.changeType} />
+            )}
+            {snap.requestingParty && (
+              <SnapField label="Requesting Party" value={snap.requestingParty} />
+            )}
+            {snap.sowRef && (
+              <SnapField label="SOW Reference" value={snap.sowRef} />
+            )}
+            <SnapField
+              label="Snapshot Date"
+              value={new Date(snap.snapshotAt).toLocaleString()}
+            />
+          </div>
+
+          {/* Title */}
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Title</p>
+            <p className="mt-1 text-sm font-medium text-[#2D2D2D]">{snap.title}</p>
+          </div>
+
+          {/* Description */}
+          {snap.description && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Description</p>
+              <div
+                className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.description) }}
+              />
+            </div>
+          )}
+
+          {/* Business Justification */}
+          {snap.businessJustification && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                Business Justification
+              </p>
+              <div
+                className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.businessJustification) }}
+              />
+            </div>
+          )}
+
+          {/* Attachments */}
+          {snap.attachments && snap.attachments.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B] mb-2">
+                Attachments
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {snap.attachments.map((a) => (
+                  <a
+                    key={a.id}
+                    href={a.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs text-[#2D2D2D] hover:bg-gray-50"
+                  >
+                    {a.fileName}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 border-t border-[#E5E5E5] bg-white px-6 py-3 flex justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SnapField({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">{label}</p>
+      <div className="mt-1 text-sm text-[#2D2D2D]">{children ?? value}</div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function AdminCRDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: cr, isLoading } = useCR(id);
   const { data: versions } = useCRVersions(id);
+  const [selectedVersion, setSelectedVersion] = useState<CRVersionRow | null>(null);
 
   if (isLoading) {
     return (
@@ -25,6 +201,12 @@ export default function AdminCRDetailPage() {
 
   const ia = cr.impactAnalysis;
 
+  // Find the most recent DECLINED status history entry to show the reason
+  const declinedEntry =
+    cr.status === 'DECLINED'
+      ? [...(cr.statusHistory ?? [])].reverse().find((h) => h.toStatus === 'DECLINED')
+      : null;
+
   return (
     <PageWrapper
       title={cr.crNumber}
@@ -35,6 +217,37 @@ export default function AdminCRDetailPage() {
       }
     >
       <div className="space-y-6">
+        {/* Declined reason banner */}
+        {declinedEntry && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex gap-3">
+            <svg
+              className="mt-0.5 h-5 w-5 shrink-0 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M12 3a9 9 0 110 18A9 9 0 0112 3z"
+              />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-red-800">
+                This CR was declined
+                {declinedEntry.changedBy?.name ? ` by ${declinedEntry.changedBy.name}` : ''}
+                {' '}on {new Date(declinedEntry.changedAt).toLocaleDateString()}
+              </p>
+              {declinedEntry.reason && (
+                <p className="mt-1 text-sm text-red-700 whitespace-pre-wrap">
+                  {declinedEntry.reason}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* CR Details */}
         <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-sm font-semibold text-[#5D5B5B] uppercase tracking-wide">
@@ -188,15 +401,21 @@ export default function AdminCRDetailPage() {
                   changedBy: { name: string };
                   fromStatus: string;
                   toStatus: string;
+                  reason: string | null;
                 }) => (
-                  <li key={h.id} className="flex items-center gap-3 text-sm">
-                    <span className="text-xs text-[#5D5B5B] w-24 shrink-0">
-                      {new Date(h.changedAt).toLocaleDateString()}
-                    </span>
-                    <span className="text-[#5D5B5B]">{h.changedBy?.name}</span>
-                    <CRStatusBadge status={h.fromStatus} />
-                    <span className="text-[#5D5B5B]">→</span>
-                    <CRStatusBadge status={h.toStatus} />
+                  <li key={h.id} className="space-y-1">
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-xs text-[#5D5B5B] w-24 shrink-0">
+                        {new Date(h.changedAt).toLocaleDateString()}
+                      </span>
+                      <span className="text-[#5D5B5B]">{h.changedBy?.name}</span>
+                      <CRStatusBadge status={h.fromStatus} />
+                      <span className="text-[#5D5B5B]">→</span>
+                      <CRStatusBadge status={h.toStatus} />
+                    </div>
+                    {h.reason && (
+                      <p className="ml-28 text-xs text-[#5D5B5B] italic">"{h.reason}"</p>
+                    )}
                   </li>
                 ),
               )}
@@ -211,29 +430,35 @@ export default function AdminCRDetailPage() {
               Version History
             </h2>
             <div className="space-y-2">
-              {versions.map(
-                (v: {
-                  id: string;
-                  versionNumber: number;
-                  createdAt: string;
-                  createdBy: { name: string };
-                }) => (
-                  <div
-                    key={v.id}
-                    className="flex items-center justify-between rounded-lg border border-[#E5E5E5] px-4 py-2 text-sm"
-                  >
-                    <span className="font-medium text-[#2D2D2D]">v{v.versionNumber}</span>
+              {versions.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center justify-between rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-[#2D2D2D]">v{v.versionNumber}</span>
                     <span className="text-[#5D5B5B]">{v.createdBy?.name}</span>
                     <span className="text-xs text-[#5D5B5B]">
                       {new Date(v.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                ),
-              )}
+                  <button
+                    onClick={() => setSelectedVersion(v as CRVersionRow)}
+                    className="rounded-lg border border-[#D3D3D3] bg-white px-3 py-1 text-xs font-medium text-[#2D2D2D] hover:bg-[#F7F7F7] transition-colors"
+                  >
+                    View
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}
       </div>
+
+      {/* Version snapshot modal */}
+      {selectedVersion && (
+        <VersionModal version={selectedVersion} onClose={() => setSelectedVersion(null)} />
+      )}
     </PageWrapper>
   );
 }

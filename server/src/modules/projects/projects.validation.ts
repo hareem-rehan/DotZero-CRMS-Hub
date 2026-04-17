@@ -41,7 +41,7 @@ export const createProjectSchema = z.object({
   assignedDmId: z.string().cuid().optional().nullable(),
   showRateToDm: coercedBoolean.default(false),
   status: z.enum(['DRAFT', 'ACTIVE', 'ON_HOLD', 'DELIVERED']).default('ACTIVE'),
-  clientEmail: z.string().email('Invalid client email').optional().nullable(),
+  clientEmail: z.string().email('Invalid PO email').optional().nullable(),
   clientMemberEmails: coercedEmailArray,
 });
 

@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
-import { ProjectStatusBadge, RoleBadge } from '@/components/ui/Badge';
+import { ProjectStatusBadge, RoleBadge, CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useProject } from '@/hooks/useProjects';
+import { useCRs } from '@/hooks/useCRs';
 import { apiClient } from '@/lib/apiClient';
 
 interface ClientLink {
@@ -21,6 +22,7 @@ interface ClientLink {
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: project, isLoading, isError } = useProject(id);
+  const { data: crsData } = useCRs({ projectId: id, pageSize: 100 });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [generatedLinks, setGeneratedLinks] = useState<ClientLink[] | null>(null);
 
@@ -77,7 +79,7 @@ export default function ProjectDetailPage() {
                 d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
               />
             </svg>
-            Generate Client Link
+            Generate PO Login Link
           </Button>
           <Link href={`/admin/projects/${id}/edit`}>
             <Button>Edit Project</Button>
@@ -89,7 +91,7 @@ export default function ProjectDetailPage() {
         {/* Project info card */}
         <div className="rounded-lg border border-[#D3D3D3] bg-white p-6">
           <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3 text-sm">
-            <InfoRow label="Client" value={project.clientName} />
+            <InfoRow label="PO" value={project.clientName} />
             <InfoRow label="Code" value={project.code} />
             <InfoRow label="Status" value={<ProjectStatusBadge status={project.status} />} />
             <InfoRow label="Hourly Rate" value={`${currency} ${rate}`} />
@@ -106,7 +108,6 @@ export default function ProjectDetailPage() {
               }
             />
             <InfoRow label="Show Rate to DM" value={project.showRateToDm ? 'Yes' : 'No'} />
-            <InfoRow label="SOW Reference" value={project.sowReference ?? '—'} />
           </div>
         </div>
 
@@ -192,7 +193,13 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-[#5D5B5B]">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <RoleBadge role={user.role} />
+                    {user.email === project.clientEmail ? (
+                      <RoleBadge role="PRODUCT_OWNER" />
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                        Team Member
+                      </span>
+                    )}
                     {!user.isActive && <span className="text-xs text-[#5D5B5B]">(Inactive)</span>}
                   </div>
                 </li>
@@ -224,6 +231,56 @@ export default function ProjectDetailPage() {
             </ul>
           </div>
         )}
+
+        {/* Change Requests */}
+        <div className="rounded-lg border border-[#D3D3D3] bg-white">
+          <div className="border-b border-[#D3D3D3] px-6 py-4">
+            <h2 className="text-sm font-semibold text-[#2D2D2D]">Change Requests</h2>
+          </div>
+          {!crsData || crsData.crs.length === 0 ? (
+            <p className="px-6 py-4 text-sm text-[#5D5B5B]">No change requests for this project.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#D3D3D3] bg-[#F7F7F7]">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">CR #</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Submitted By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#D3D3D3]">
+                  {crsData.crs.map((cr) => (
+                    <tr key={cr.id} className="hover:bg-[#F7F7F7] transition-colors">
+                      <td className="px-6 py-3">
+                        <Link
+                          href={`/admin/change-requests/${cr.id}`}
+                          className="font-medium text-[#EF323F] hover:underline"
+                        >
+                          {cr.crNumber}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3 text-[#2D2D2D]">
+                        <Link href={`/admin/change-requests/${cr.id}`} className="hover:underline">
+                          {cr.title}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3"><CRStatusBadge status={cr.status} /></td>
+                      <td className="px-6 py-3"><CRPriorityBadge priority={cr.priority} /></td>
+                      <td className="px-6 py-3 text-[#5D5B5B]">{cr.submittedBy.name}</td>
+                      <td className="px-6 py-3 text-[#5D5B5B]">
+                        {new Date(cr.updatedAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </PageWrapper>
   );

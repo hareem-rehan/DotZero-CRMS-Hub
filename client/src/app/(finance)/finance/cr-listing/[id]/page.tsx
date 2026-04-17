@@ -60,7 +60,7 @@ export default function FinanceCRDetailPage() {
             <CRStatusBadge status={cr.status} />
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <Field label="Client" value={cr.project.clientName} />
+            <Field label="PO" value={cr.project.clientName} />
             <Field label="Priority" value={<CRPriorityBadge priority={cr.priority} />} />
             <Field label="Change Type" value={cr.changeType} />
             <Field label="Submitted By" value={cr.submittedBy.name} />

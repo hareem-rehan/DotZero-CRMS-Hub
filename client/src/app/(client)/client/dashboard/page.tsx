@@ -114,19 +114,19 @@ export default function PODashboardPage() {
         <div className="space-y-6">
           {/* ── Summary Cards ── */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatCard label="Total CRs" value={po?.summary.total ?? 0} />
+            <StatCard label="Total CRs" value={po?.summary?.total ?? 0} />
             <StatCard
               label="Pending"
-              value={po?.summary.pending ?? 0}
+              value={po?.summary?.pending ?? 0}
               sub="Awaiting action"
-              accent={(po?.summary.pending ?? 0) > 0}
+              accent={(po?.summary?.pending ?? 0) > 0}
             />
             <StatCard
               label="Approved This Month"
-              value={po?.summary.approvedThisMonth ?? 0}
+              value={po?.summary?.approvedThisMonth ?? 0}
               sub="Current month"
             />
-            <StatCard label="Declined / Deferred" value={po?.summary.declinedOrDeferred ?? 0} />
+            <StatCard label="Declined / Deferred" value={po?.summary?.declinedOrDeferred ?? 0} />
           </div>
 
           {/* ── Monthly Breakdown ── */}

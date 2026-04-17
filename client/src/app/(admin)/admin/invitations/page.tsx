@@ -114,7 +114,7 @@ export default function InvitationsPage() {
                 type="email"
                 value={sendEmail}
                 onChange={(e) => setSendEmail(e.target.value)}
-                placeholder="client@example.com"
+                placeholder="po@example.com"
                 className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] w-64"
               />
             </div>

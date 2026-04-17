@@ -156,7 +156,7 @@ export default function FinanceDashboardPage() {
           onChange={(e) => setClientName(e.target.value)}
           className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] bg-white"
         >
-          <option value="">All Clients</option>
+          <option value="">All POs</option>
           {clientOptions.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -245,7 +245,7 @@ export default function FinanceDashboardPage() {
                   <tr>
                     {[
                       'Project',
-                      'Client',
+                      'PO',
                       'CRs',
                       'Hours',
                       'Original Cost',

@@ -61,8 +61,8 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#E5E5E5] px-6 py-4">
+      <div className="flex w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl max-h-[90vh]">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#E5E5E5] px-6 py-4">
           <h3 className="text-base font-semibold text-[#2D2D2D]">{title}</h3>
           <button onClick={onClose} className="text-[#5D5B5B] hover:text-[#2D2D2D]">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,8 +75,201 @@ function Modal({
             </svg>
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="overflow-y-auto px-6 py-5">{children}</div>
       </div>
+    </div>
+  );
+}
+
+// ─── Version snapshot types & modal ──────────────────────────────────────────
+
+interface VersionSnapshot {
+  version: number;
+  title: string;
+  description: string | null;
+  businessJustification: string | null;
+  priority: string | null;
+  changeType: string | null;
+  requestingParty: string | null;
+  sowRef: string | null;
+  status: string;
+  attachments?: Array<{ id: string; fileName: string; fileUrl: string }>;
+  snapshotAt: string;
+  impactAnalysis?: {
+    estimatedHours: string | number | null;
+    timelineImpact: string | null;
+    affectedDeliverables: string | null;
+    revisedMilestones: string | null;
+    resourcesRequired: string | null;
+    recommendation: string | null;
+    dm?: { name: string } | null;
+  } | null;
+}
+
+interface CRVersionRow {
+  id: string;
+  versionNumber: number;
+  snapshotJson: unknown;
+  createdAt: string;
+  createdBy: { id: string; name: string };
+}
+
+function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: () => void }) {
+  const snap = version.snapshotJson as VersionSnapshot;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl max-h-[90vh]">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#E5E5E5] bg-white px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-[#2D2D2D]">Version {version.versionNumber} Snapshot</h2>
+            <p className="mt-0.5 text-xs text-[#5D5B5B]">
+              Saved on {new Date(version.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[#5D5B5B] hover:bg-[#F7F7F7]">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {/* Body */}
+        <div className="overflow-y-auto space-y-5 p-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <SnapField label="Status"><CRStatusBadge status={snap.status} /></SnapField>
+            {snap.priority && <SnapField label="Priority"><CRPriorityBadge priority={snap.priority} /></SnapField>}
+            {snap.changeType && <SnapField label="Change Type" value={snap.changeType} />}
+            {snap.requestingParty && <SnapField label="Requesting Party" value={snap.requestingParty} />}
+            <SnapField label="Snapshot Date" value={new Date(snap.snapshotAt).toLocaleString()} />
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Title</p>
+            <p className="mt-1 text-sm font-medium text-[#2D2D2D]">{snap.title}</p>
+          </div>
+          {snap.description && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Description</p>
+              <div
+                className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.description) }}
+              />
+            </div>
+          )}
+          {snap.businessJustification && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Business Justification</p>
+              <div
+                className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.businessJustification) }}
+              />
+            </div>
+          )}
+          {snap.attachments && snap.attachments.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B] mb-2">Attachments</p>
+              <div className="flex flex-wrap gap-2">
+                {snap.attachments.map((a) => (
+                  <a key={a.id} href={a.fileUrl} target="_blank" rel="noopener noreferrer"
+                    className="rounded-md border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs text-[#2D2D2D] hover:bg-gray-50">
+                    {a.fileName}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* DM Estimation at time of this version */}
+          {snap.impactAnalysis && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-800">
+                DM Estimation (at this version)
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {snap.impactAnalysis.dm?.name && (
+                  <SnapField label="Delivery Manager" value={snap.impactAnalysis.dm.name} />
+                )}
+                {snap.impactAnalysis.estimatedHours != null && (
+                  <SnapField label="Estimated Hours">
+                    <span className="text-xl font-bold text-blue-900">
+                      {snap.impactAnalysis.estimatedHours}h
+                    </span>
+                  </SnapField>
+                )}
+                {snap.impactAnalysis.timelineImpact && (
+                  <SnapField label="Timeline Impact" value={snap.impactAnalysis.timelineImpact} />
+                )}
+                {snap.impactAnalysis.affectedDeliverables && (
+                  <SnapField label="Affected Deliverables" value={snap.impactAnalysis.affectedDeliverables} />
+                )}
+                {snap.impactAnalysis.revisedMilestones && (
+                  <SnapField label="Revised Milestones" value={snap.impactAnalysis.revisedMilestones} />
+                )}
+                {snap.impactAnalysis.resourcesRequired && (
+                  <SnapField label="Resources Required" value={snap.impactAnalysis.resourcesRequired} />
+                )}
+                {snap.impactAnalysis.recommendation && (
+                  <div className="col-span-2">
+                    <SnapField label="DM Recommendation" value={snap.impactAnalysis.recommendation} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Footer */}
+        <div className="sticky bottom-0 shrink-0 border-t border-[#E5E5E5] bg-white px-6 py-3 flex justify-end">
+          <Button variant="secondary" onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SnapField({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">{label}</p>
+      <div className="mt-1 text-sm text-[#2D2D2D]">{children ?? value}</div>
+    </div>
+  );
+}
+
+// ─── ResubmitButton ───────────────────────────────────────────────────────────
+
+function ResubmitButton({
+  canResubmit,
+  disabledReason,
+  onResubmit,
+  label = 'Resubmit',
+  className = '',
+}: {
+  canResubmit: boolean;
+  disabledReason: string | null;
+  onResubmit: () => void;
+  label?: string;
+  className?: string;
+}) {
+  if (canResubmit) {
+    return (
+      <Button variant="secondary" onClick={onResubmit} className={className}>
+        {label}
+      </Button>
+    );
+  }
+  return (
+    <div className={`relative group inline-flex ${className}`}>
+      <Button variant="secondary" disabled className="cursor-not-allowed opacity-50">
+        {label}
+      </Button>
+      {disabledReason && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 w-56 rounded-lg bg-[#2D2D2D] px-3 py-2 text-xs text-white text-center shadow-lg">
+          {disabledReason}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2D2D2D]" />
+        </div>
+      )}
     </div>
   );
 }
@@ -133,6 +326,8 @@ export default function CRDetailPage() {
   const [resubTitle, setResubTitle] = useState('');
   const [resubDescription, setResubDescription] = useState('');
   const [resubJustification, setResubJustification] = useState('');
+  const [resubPriority, setResubPriority] = useState('');
+  const [resubChangeType, setResubChangeType] = useState('');
   const resubmitCR = useResubmitCR(id, {
     onSuccess: () => {
       toast.success('CR resubmitted as new version');
@@ -156,6 +351,7 @@ export default function CRDetailPage() {
 
   // Version history panel
   const [showVersions, setShowVersions] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<CRVersionRow | null>(null);
 
   // ── Open resubmit form pre-filled ──
   const openResubmit = () => {
@@ -163,6 +359,8 @@ export default function CRDetailPage() {
       setResubTitle(cr.title);
       setResubDescription(cr.description);
       setResubJustification(cr.businessJustification);
+      setResubPriority(cr.priority ?? 'MEDIUM');
+      setResubChangeType(cr.changeType ?? 'SCOPE');
     }
     setShowResubmit(true);
   };
@@ -195,6 +393,28 @@ export default function CRDetailPage() {
   const isDraft = cr.status === 'DRAFT';
   const isCancellable = !['APPROVED', 'DECLINED', 'CANCELLED', 'COMPLETED'].includes(cr.status);
 
+  // ── Resubmission limit checks (mirrors backend rules) ──
+  const MAX_RESUBMISSIONS = 2;
+  const crVersion = (cr as unknown as { version: number }).version ?? 1;
+  const resubmissionCount = crVersion - 1;
+  const resubLimitReached = resubmissionCount >= MAX_RESUBMISSIONS;
+
+  // 72-hour window from last ESTIMATED / DECLINED / DEFERRED status change
+  const triggerEntry = [...(cr.statusHistory ?? [])]
+    .reverse()
+    .find((h) => ['ESTIMATED', 'DECLINED', 'DEFERRED'].includes(h.toStatus));
+  const hoursSinceTrigger = triggerEntry
+    ? (Date.now() - new Date(triggerEntry.changedAt).getTime()) / (1000 * 60 * 60)
+    : 0;
+  const resubWindowExpired = !!triggerEntry && hoursSinceTrigger > 72;
+
+  const canResubmit = !resubLimitReached && !resubWindowExpired;
+  const resubDisabledReason = resubLimitReached
+    ? `Maximum ${MAX_RESUBMISSIONS} resubmissions reached`
+    : resubWindowExpired
+    ? '72-hour resubmission window has expired'
+    : null;
+
   return (
     <PageWrapper title={cr.crNumber}>
       {/* Breadcrumb + actions */}
@@ -225,26 +445,18 @@ export default function CRDetailPage() {
               <Button variant="secondary" onClick={() => setShowDefer(true)}>
                 Defer
               </Button>
-              <Button variant="secondary" onClick={openResubmit}>
-                Resubmit
-              </Button>
+              <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
               <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
             </>
           )}
           {isApproved && (
-            <Button variant="secondary" onClick={openResubmit}>
-              Resubmit CR
-            </Button>
+            <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
           )}
           {isDeclined && (
-            <Button variant="secondary" onClick={openResubmit}>
-              Resubmit CR
-            </Button>
+            <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
           )}
           {isDeferred && (
-            <Button variant="secondary" onClick={openResubmit}>
-              Resubmit CR
-            </Button>
+            <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
           )}
           {isCancellable && !isDraft && !isEstimated && (
             <Button variant="ghost" onClick={() => setShowCancel(true)}>
@@ -303,9 +515,15 @@ export default function CRDetailPage() {
               >
                 <span className="font-mono font-semibold text-[#EF323F]">v{v.versionNumber}</span>
                 <span className="text-[#5D5B5B]">Snapshot by {v.createdBy.name}</span>
-                <span className="ml-auto text-xs text-[#5D5B5B]">
+                <span className="text-xs text-[#5D5B5B]">
                   {new Date(v.createdAt).toLocaleString()}
                 </span>
+                <button
+                  onClick={() => setSelectedVersion(v as CRVersionRow)}
+                  className="ml-auto rounded-lg border border-[#D3D3D3] bg-white px-3 py-1 text-xs font-medium text-[#2D2D2D] hover:bg-[#F7F7F7] transition-colors"
+                >
+                  View
+                </button>
               </div>
             ))}
           </div>
@@ -341,10 +559,7 @@ export default function CRDetailPage() {
                 <dt className="text-[#5D5B5B]">Requesting Party</dt>
                 <dd className="mt-0.5 text-[#2D2D2D]">{cr.requestingParty || '—'}</dd>
               </div>
-              <div>
-                <dt className="text-[#5D5B5B]">SOW Reference</dt>
-                <dd className="mt-0.5 text-[#2D2D2D]">{cr.sowRef || '—'}</dd>
-              </div>
+
               <div>
                 <dt className="text-[#5D5B5B]">Date Submitted</dt>
                 <dd className="mt-0.5 text-[#2D2D2D]">
@@ -423,9 +638,7 @@ export default function CRDetailPage() {
                   <Button variant="secondary" onClick={() => setShowDecline(true)}>
                     Decline
                   </Button>
-                  <Button variant="secondary" onClick={openResubmit}>
-                    Resubmit
-                  </Button>
+                  <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
                   <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
                 </div>
               )}
@@ -446,9 +659,7 @@ export default function CRDetailPage() {
                   </p>
                 </div>
                 {isApproved && (
-                  <Button variant="secondary" onClick={openResubmit} className="shrink-0">
-                    Resubmit CR
-                  </Button>
+                  <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
                 )}
               </div>
             </div>
@@ -476,9 +687,7 @@ export default function CRDetailPage() {
                         </p>
                       )}
                     </div>
-                    <Button variant="secondary" onClick={openResubmit} className="shrink-0">
-                      Resubmit CR
-                    </Button>
+                    <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
                   </div>
                 </div>
               );
@@ -506,9 +715,7 @@ export default function CRDetailPage() {
                         </p>
                       )}
                     </div>
-                    <Button variant="secondary" onClick={openResubmit} className="shrink-0">
-                      Resubmit CR
-                    </Button>
+                    <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
                   </div>
                 </div>
               );
@@ -794,6 +1001,36 @@ export default function CRDetailPage() {
               value={resubTitle}
               onChange={(e) => setResubTitle(e.target.value)}
             />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Priority</label>
+                <select
+                  value={resubPriority}
+                  onChange={(e) => setResubPriority(e.target.value)}
+                  className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Change Type</label>
+                <select
+                  value={resubChangeType}
+                  onChange={(e) => setResubChangeType(e.target.value)}
+                  className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+                >
+                  <option value="SCOPE">Scope</option>
+                  <option value="TIMELINE">Timeline</option>
+                  <option value="BUDGET">Budget</option>
+                  <option value="RESOURCE">Resource</option>
+                  <option value="TECHNICAL">Technical</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
             <RichTextEditor
               label="Description"
               value={resubDescription ?? ''}
@@ -814,6 +1051,8 @@ export default function CRDetailPage() {
                     title: resubTitle,
                     description: resubDescription,
                     businessJustification: resubJustification,
+                    priority: resubPriority as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+                    changeType: resubChangeType as 'SCOPE' | 'TIMELINE' | 'BUDGET' | 'RESOURCE' | 'TECHNICAL' | 'OTHER',
                   })
                 }
                 loading={resubmitCR.isPending}
@@ -824,6 +1063,11 @@ export default function CRDetailPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Version snapshot modal */}
+      {selectedVersion && (
+        <VersionModal version={selectedVersion} onClose={() => setSelectedVersion(null)} />
       )}
     </PageWrapper>
   );

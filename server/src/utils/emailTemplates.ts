@@ -120,7 +120,7 @@ export const crApprovedEmail = (
   subject: `CR Approved — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Approved</h2>
-    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been approved by the client.</p>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been approved by the PO.</p>
     ${crMeta(crNumber, projectName)}
     ${approvalNotes ? `<p style="color:#5D5B5B;font-size:14px"><em>Notes: ${approvalNotes}</em></p>` : ''}
     <p style="color:#5D5B5B;font-size:14px">No further action is required from you at this time.</p>
@@ -136,7 +136,7 @@ export const crDeclinedEmail = (
   subject: `CR Declined — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Declined</h2>
-    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been declined by the client.</p>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been declined by the PO.</p>
     ${crMeta(crNumber, projectName)}
     <div style="background:#FFF5F5;border-left:3px solid #EF323F;padding:12px 16px;margin:16px 0;font-size:13px">
       <strong style="color:#EF323F">Reason:</strong><br>
@@ -155,10 +155,26 @@ export const crResubmittedEmail = (
   subject: `CR Resubmitted (v${version}) — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Resubmitted</h2>
-    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the client has revised and resubmitted the following change request.</p>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the PO has revised and resubmitted the following change request.</p>
     ${crMeta(crNumber, projectName)}
     <p style="color:#5D5B5B;font-size:14px">This is now <strong>version ${version}</strong>. Please review the changes and provide a new estimation.</p>
     ${btn('Review Resubmission', `${BASE_URL}/dm/pending/${crId}`)}
+  `),
+});
+
+export const crCancelledEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  reason?: string,
+) => ({
+  subject: `CR Cancelled — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Cancelled</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been cancelled by the PO. No further action is required.</p>
+    ${crMeta(crNumber, projectName)}
+    ${reason ? `<div style="background:#FFF5F5;border-left:3px solid #EF323F;padding:12px 16px;margin:16px 0;font-size:13px"><strong style="color:#EF323F">Reason:</strong><br><span style="color:#2D2D2D">${reason}</span></div>` : ''}
+    <p style="color:#5D5B5B;font-size:14px">This CR has been closed and will require no further estimation or review.</p>
   `),
 });
 

@@ -224,7 +224,6 @@ export default function DmCREstimatePage() {
                   prev={latestSnapshot.requestingParty}
                   curr={cr.requestingParty}
                 />
-                <DiffField label="SOW Reference" prev={latestSnapshot.sowRef} curr={cr.sowRef} />
                 <DiffField
                   label="Description"
                   prev={latestSnapshot.description}

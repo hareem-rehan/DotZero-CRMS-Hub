@@ -7,7 +7,7 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
 import { useCRs, CRSummary } from '@/hooks/useCRs';
-import { useProjects } from '@/hooks/useProjects';
+import { useMyProjects } from '@/hooks/useProjects';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
@@ -40,11 +40,11 @@ export default function DmAllCRsPage() {
     page,
     pageSize: 20,
   });
-  const { data: projectsData } = useProjects({ pageSize: 100 });
+  const { data: myProjects } = useMyProjects();
 
   const projectOptions = [
     { value: '', label: 'All Projects' },
-    ...(projectsData?.projects ?? []).map((p) => ({ value: p.id, label: p.name })),
+    ...(myProjects ?? []).map((p) => ({ value: p.id, label: p.name })),
   ];
 
   const columns: Column<CRSummary>[] = [
