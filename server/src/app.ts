@@ -16,6 +16,9 @@ import { dashboardRouter } from './modules/dashboard/dashboard.routes';
 export const createApp = () => {
   const app = express();
 
+  // Trust Render's proxy so express-rate-limit and req.ip work correctly
+  app.set('trust proxy', 1);
+
   // Security headers
   app.use(helmet());
 
