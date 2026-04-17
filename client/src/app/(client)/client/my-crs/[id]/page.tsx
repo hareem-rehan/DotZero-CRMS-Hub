@@ -676,8 +676,8 @@ export default function CRDetailPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="mb-2 text-sm font-semibold text-purple-800">Deferred</h3>
-                      {deferEntry?.note && (
-                        <p className="text-sm text-purple-700">{deferEntry.note}</p>
+                      {deferEntry?.reason && (
+                        <p className="text-sm text-purple-700">{deferEntry.reason}</p>
                       )}
                       {deferEntry && (
                         <p className="mt-1 text-xs text-purple-600 flex items-center">
@@ -704,8 +704,8 @@ export default function CRDetailPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="mb-2 text-sm font-semibold text-red-800">Declined</h3>
-                      {declineEntry?.note && (
-                        <p className="text-sm text-red-700">{declineEntry.note}</p>
+                      {declineEntry?.reason && (
+                        <p className="text-sm text-red-700">{declineEntry.reason}</p>
                       )}
                       {declineEntry && (
                         <p className="mt-1 text-xs text-red-600 flex items-center">
