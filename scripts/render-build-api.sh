@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "==> Installing root dependencies (zod, @prisma/client for shared/validators)..."
+echo "==> Installing root dependencies (zod, @prisma/client, ts-node for seed)..."
 npm install --include=dev
 
 echo "==> Installing server dependencies (includes @types/*)..."
@@ -16,5 +16,9 @@ npm run build
 
 echo "==> Running database migrations..."
 npx prisma migrate deploy --schema ../prisma/schema.prisma
+
+echo "==> Seeding database (upsert — safe to re-run)..."
+cd ..
+npx prisma db seed
 
 echo "==> Build complete ✓"
