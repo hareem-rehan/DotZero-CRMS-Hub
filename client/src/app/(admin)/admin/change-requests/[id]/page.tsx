@@ -35,13 +35,7 @@ interface CRVersionRow {
 
 // ─── Version Modal ────────────────────────────────────────────────────────────
 
-function VersionModal({
-  version,
-  onClose,
-}: {
-  version: CRVersionRow;
-  onClose: () => void;
-}) {
+function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: () => void }) {
   const snap = version.snapshotJson as VersionSnapshot;
 
   return (
@@ -68,7 +62,12 @@ function VersionModal({
             className="rounded-lg p-1.5 text-[#5D5B5B] hover:bg-[#F7F7F7] transition-colors"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -85,19 +84,12 @@ function VersionModal({
                 <CRPriorityBadge priority={snap.priority} />
               </SnapField>
             )}
-            {snap.changeType && (
-              <SnapField label="Change Type" value={snap.changeType} />
-            )}
+            {snap.changeType && <SnapField label="Change Type" value={snap.changeType} />}
             {snap.requestingParty && (
               <SnapField label="Requesting Party" value={snap.requestingParty} />
             )}
-            {snap.sowRef && (
-              <SnapField label="SOW Reference" value={snap.sowRef} />
-            )}
-            <SnapField
-              label="Snapshot Date"
-              value={new Date(snap.snapshotAt).toLocaleString()}
-            />
+            {snap.sowRef && <SnapField label="SOW Reference" value={snap.sowRef} />}
+            <SnapField label="Snapshot Date" value={new Date(snap.snapshotAt).toLocaleString()} />
           </div>
 
           {/* Title */}
@@ -109,7 +101,9 @@ function VersionModal({
           {/* Description */}
           {snap.description && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Description</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                Description
+              </p>
               <div
                 className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.description) }}
@@ -236,8 +230,8 @@ export default function AdminCRDetailPage() {
             <div>
               <p className="text-sm font-semibold text-red-800">
                 This CR was declined
-                {declinedEntry.changedBy?.name ? ` by ${declinedEntry.changedBy.name}` : ''}
-                {' '}on {new Date(declinedEntry.changedAt).toLocaleDateString()}
+                {declinedEntry.changedBy?.name ? ` by ${declinedEntry.changedBy.name}` : ''} on{' '}
+                {new Date(declinedEntry.changedAt).toLocaleDateString()}
               </p>
               {declinedEntry.reason && (
                 <p className="mt-1 text-sm text-red-700 whitespace-pre-wrap">
@@ -409,7 +403,9 @@ export default function AdminCRDetailPage() {
                     SUPER_ADMIN: 'Admin',
                     FINANCE: 'Finance',
                   };
-                  const role = h.changedBy?.role ? roleLabel[h.changedBy.role] ?? h.changedBy.role : null;
+                  const role = h.changedBy?.role
+                    ? (roleLabel[h.changedBy.role] ?? h.changedBy.role)
+                    : null;
                   return (
                     <li key={h.id} className="space-y-1">
                       <div className="flex items-center gap-3 text-sm">
@@ -427,7 +423,9 @@ export default function AdminCRDetailPage() {
                         <CRStatusBadge status={h.toStatus} />
                       </div>
                       {h.reason && (
-                        <p className="ml-28 text-xs text-[#5D5B5B] italic">&quot;{h.reason}&quot;</p>
+                        <p className="ml-28 text-xs text-[#5D5B5B] italic">
+                          &quot;{h.reason}&quot;
+                        </p>
                       )}
                     </li>
                   );

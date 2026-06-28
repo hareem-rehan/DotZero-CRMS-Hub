@@ -47,10 +47,15 @@ export default function DmPendingPage() {
 
   const estimation = all
     .filter((cr) => ['SUBMITTED', 'RESUBMITTED', 'UNDER_REVIEW'].includes(cr.status))
-    .sort((a, b) => new Date(a.dateOfRequest ?? a.updatedAt).getTime() - new Date(b.dateOfRequest ?? b.updatedAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(a.dateOfRequest ?? a.updatedAt).getTime() -
+        new Date(b.dateOfRequest ?? b.updatedAt).getTime(),
+    );
 
   // A DM-initiated DRAFT with clientNotes was returned by the PO — show it in revision, not drafts
-  const isReturnedDraft = (cr: CRSummary) => cr.initiatedByDm && cr.status === 'DRAFT' && !!cr.clientNotes;
+  const isReturnedDraft = (cr: CRSummary) =>
+    cr.initiatedByDm && cr.status === 'DRAFT' && !!cr.clientNotes;
   const drafts = all.filter((cr) => cr.initiatedByDm && cr.status === 'DRAFT' && !cr.clientNotes);
   const sent = all.filter((cr) => cr.status === 'PENDING_CLIENT_REVIEW');
   const revision = all.filter((cr) => cr.status === 'CLIENT_REVISION' || isReturnedDraft(cr));
@@ -74,74 +79,35 @@ export default function DmPendingPage() {
       header: 'CR #',
       sortable: true,
       render: (row) => (
-        <Link href={`/dm/pending/${row.id}`} className="font-mono text-sm font-medium text-[#EF323F] hover:underline">
+        <Link
+          href={`/dm/pending/${row.id}`}
+          className="font-mono text-sm font-medium text-[#EF323F] hover:underline"
+        >
           {row.crNumber}
         </Link>
       ),
     },
-    { key: 'project', header: 'Project', render: (row) => <span className="text-sm text-[#2D2D2D]">{row.project.name}</span> },
+    {
+      key: 'project',
+      header: 'Project',
+      render: (row) => <span className="text-sm text-[#2D2D2D]">{row.project.name}</span>,
+    },
     {
       key: 'title',
       header: 'Title',
       render: (row) => (
-        <Link href={`/dm/pending/${row.id}`} className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1">{row.title}</Link>
-      ),
-    },
-    { key: 'priority', header: 'Priority', render: (row) => <CRPriorityBadge priority={row.priority} /> },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row) => (
-        <CRStatusBadge status={row.status} overrides={{ SUBMITTED: { label: 'Pending Estimation', variant: 'blue' } }} />
+        <Link
+          href={`/dm/pending/${row.id}`}
+          className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1"
+        >
+          {row.title}
+        </Link>
       ),
     },
     {
-      key: 'dateOfRequest',
-      header: 'Submitted',
-      sortable: true,
-      render: (row) => <span className="text-xs text-[#5D5B5B]">{row.dateOfRequest ? new Date(row.dateOfRequest).toLocaleDateString() : '—'}</span>,
-    },
-    { key: 'updatedAt', header: 'Days Pending', render: (row) => <DaysPending dateStr={row.dateOfRequest} /> },
-  ];
-
-  const draftColumns: Column<CRSummary>[] = [
-    {
-      key: 'crNumber',
-      header: 'CR #',
-      render: (row) => (
-        <Link href={`/dm/draft/${row.id}`} className="font-mono text-sm font-medium text-[#EF323F] hover:underline">{row.crNumber}</Link>
-      ),
-    },
-    { key: 'project', header: 'Project', render: (row) => <span className="text-sm">{row.project.name}</span> },
-    {
-      key: 'title',
-      header: 'Title',
-      render: (row) => <Link href={`/dm/draft/${row.id}`} className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1">{row.title}</Link>,
-    },
-    { key: 'priority', header: 'Priority', render: (row) => <CRPriorityBadge priority={row.priority} /> },
-    {
-      key: 'submittedBy',
-      header: 'On Behalf Of',
-      render: (row) => <span className="text-sm text-[#5D5B5B]">{row.submittedBy?.name ?? '—'}</span>,
-    },
-    { key: 'updatedAt', header: 'Last Updated', render: (row) => <span className="text-xs text-[#5D5B5B]">{new Date(row.updatedAt).toLocaleDateString()}</span> },
-  ];
-
-  const sentColumns: Column<CRSummary>[] = [
-    {
-      key: 'crNumber',
-      header: 'CR #',
-      render: (row) => (
-        <Link href={`/dm/draft/${row.id}`} className="font-mono text-sm font-medium text-[#EF323F] hover:underline">{row.crNumber}</Link>
-      ),
-    },
-    { key: 'project', header: 'Project', render: (row) => <span className="text-sm">{row.project.name}</span> },
-    { key: 'title', header: 'Title', render: (row) => <span className="text-sm text-[#2D2D2D] line-clamp-1">{row.title}</span> },
-    { key: 'priority', header: 'Priority', render: (row) => <CRPriorityBadge priority={row.priority} /> },
-    {
-      key: 'submittedBy',
-      header: 'Client',
-      render: (row) => <span className="text-sm text-[#5D5B5B]">{row.submittedBy?.name ?? '—'}</span>,
+      key: 'priority',
+      header: 'Priority',
+      render: (row) => <CRPriorityBadge priority={row.priority} />,
     },
     {
       key: 'status',
@@ -149,13 +115,138 @@ export default function DmPendingPage() {
       render: (row) => (
         <CRStatusBadge
           status={row.status}
-          overrides={row.status === 'PENDING_CLIENT_REVIEW' && row.clientNotes
-            ? { PENDING_CLIENT_REVIEW: { label: 'Resubmitted to PO', variant: 'blue' } }
-            : {}}
+          overrides={{ SUBMITTED: { label: 'Pending Estimation', variant: 'blue' } }}
         />
       ),
     },
-    { key: 'dateOfRequest', header: 'Sent', render: (row) => <span className="text-xs text-[#5D5B5B]">{row.dateOfRequest ? new Date(row.dateOfRequest).toLocaleDateString() : '—'}</span> },
+    {
+      key: 'dateOfRequest',
+      header: 'Submitted',
+      sortable: true,
+      render: (row) => (
+        <span className="text-xs text-[#5D5B5B]">
+          {row.dateOfRequest ? new Date(row.dateOfRequest).toLocaleDateString() : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'updatedAt',
+      header: 'Days Pending',
+      render: (row) => <DaysPending dateStr={row.dateOfRequest} />,
+    },
+  ];
+
+  const draftColumns: Column<CRSummary>[] = [
+    {
+      key: 'crNumber',
+      header: 'CR #',
+      render: (row) => (
+        <Link
+          href={`/dm/draft/${row.id}`}
+          className="font-mono text-sm font-medium text-[#EF323F] hover:underline"
+        >
+          {row.crNumber}
+        </Link>
+      ),
+    },
+    {
+      key: 'project',
+      header: 'Project',
+      render: (row) => <span className="text-sm">{row.project.name}</span>,
+    },
+    {
+      key: 'title',
+      header: 'Title',
+      render: (row) => (
+        <Link
+          href={`/dm/draft/${row.id}`}
+          className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1"
+        >
+          {row.title}
+        </Link>
+      ),
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: (row) => <CRPriorityBadge priority={row.priority} />,
+    },
+    {
+      key: 'submittedBy',
+      header: 'On Behalf Of',
+      render: (row) => (
+        <span className="text-sm text-[#5D5B5B]">{row.submittedBy?.name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'updatedAt',
+      header: 'Last Updated',
+      render: (row) => (
+        <span className="text-xs text-[#5D5B5B]">
+          {new Date(row.updatedAt).toLocaleDateString()}
+        </span>
+      ),
+    },
+  ];
+
+  const sentColumns: Column<CRSummary>[] = [
+    {
+      key: 'crNumber',
+      header: 'CR #',
+      render: (row) => (
+        <Link
+          href={`/dm/draft/${row.id}`}
+          className="font-mono text-sm font-medium text-[#EF323F] hover:underline"
+        >
+          {row.crNumber}
+        </Link>
+      ),
+    },
+    {
+      key: 'project',
+      header: 'Project',
+      render: (row) => <span className="text-sm">{row.project.name}</span>,
+    },
+    {
+      key: 'title',
+      header: 'Title',
+      render: (row) => <span className="text-sm text-[#2D2D2D] line-clamp-1">{row.title}</span>,
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: (row) => <CRPriorityBadge priority={row.priority} />,
+    },
+    {
+      key: 'submittedBy',
+      header: 'Client',
+      render: (row) => (
+        <span className="text-sm text-[#5D5B5B]">{row.submittedBy?.name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row) => (
+        <CRStatusBadge
+          status={row.status}
+          overrides={
+            row.status === 'PENDING_CLIENT_REVIEW' && row.clientNotes
+              ? { PENDING_CLIENT_REVIEW: { label: 'Resubmitted to PO', variant: 'blue' } }
+              : {}
+          }
+        />
+      ),
+    },
+    {
+      key: 'dateOfRequest',
+      header: 'Sent',
+      render: (row) => (
+        <span className="text-xs text-[#5D5B5B]">
+          {row.dateOfRequest ? new Date(row.dateOfRequest).toLocaleDateString() : '—'}
+        </span>
+      ),
+    },
     { key: 'id', header: '', render: (row) => <RecallButton crId={row.id} /> },
   ];
 
@@ -164,37 +255,80 @@ export default function DmPendingPage() {
       key: 'crNumber',
       header: 'CR #',
       render: (row) => (
-        <Link href={`/dm/client-revision/${row.id}`} className="font-mono text-sm font-medium text-[#EF323F] hover:underline">{row.crNumber}</Link>
+        <Link
+          href={`/dm/client-revision/${row.id}`}
+          className="font-mono text-sm font-medium text-[#EF323F] hover:underline"
+        >
+          {row.crNumber}
+        </Link>
       ),
     },
-    { key: 'project', header: 'Project', render: (row) => <span className="text-sm">{row.project.name}</span> },
+    {
+      key: 'project',
+      header: 'Project',
+      render: (row) => <span className="text-sm">{row.project.name}</span>,
+    },
     {
       key: 'title',
       header: 'Title',
       render: (row) => (
-        <Link href={`/dm/client-revision/${row.id}`} className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1">{row.title}</Link>
+        <Link
+          href={`/dm/client-revision/${row.id}`}
+          className="text-sm text-[#2D2D2D] hover:text-[#EF323F] line-clamp-1"
+        >
+          {row.title}
+        </Link>
       ),
     },
-    { key: 'priority', header: 'Priority', render: (row) => <CRPriorityBadge priority={row.priority} /> },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: (row) => <CRPriorityBadge priority={row.priority} />,
+    },
     {
       key: 'submittedBy',
       header: 'Client',
-      render: (row) => <span className="text-sm text-[#5D5B5B]">{row.submittedBy?.name ?? '—'}</span>,
+      render: (row) => (
+        <span className="text-sm text-[#5D5B5B]">{row.submittedBy?.name ?? '—'}</span>
+      ),
     },
     {
       key: 'status',
       header: 'Status',
+      render: (row) =>
+        isReturnedDraft(row) ? (
+          <Badge label="Resubmitted by PO" variant="orange" />
+        ) : (
+          <CRStatusBadge status={row.status} />
+        ),
+    },
+    {
+      key: 'updatedAt',
+      header: 'Revised',
       render: (row) => (
-        isReturnedDraft(row)
-          ? <Badge label="Resubmitted by PO" variant="orange" />
-          : <CRStatusBadge status={row.status} />
+        <span className="text-xs text-[#5D5B5B]">
+          {new Date(row.updatedAt).toLocaleDateString()}
+        </span>
       ),
     },
-    { key: 'updatedAt', header: 'Revised', render: (row) => <span className="text-xs text-[#5D5B5B]">{new Date(row.updatedAt).toLocaleDateString()}</span> },
   ];
 
-  const activeData = tab === 'estimation' ? estimation : tab === 'drafts' ? drafts : tab === 'sent' ? sent : revision;
-  const activeColumns = tab === 'estimation' ? estimationColumns : tab === 'drafts' ? draftColumns : tab === 'sent' ? sentColumns : revisionColumns;
+  const activeData =
+    tab === 'estimation'
+      ? estimation
+      : tab === 'drafts'
+        ? drafts
+        : tab === 'sent'
+          ? sent
+          : revision;
+  const activeColumns =
+    tab === 'estimation'
+      ? estimationColumns
+      : tab === 'drafts'
+        ? draftColumns
+        : tab === 'sent'
+          ? sentColumns
+          : revisionColumns;
   const emptyMessages = {
     estimation: 'No pending change requests.',
     drafts: 'No draft CRs.',
@@ -228,9 +362,11 @@ export default function DmPendingPage() {
           >
             {t.label}
             {t.count > 0 && (
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                tab === t.key ? 'bg-[#EF323F] text-white' : 'bg-gray-100 text-[#5D5B5B]'
-              }`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  tab === t.key ? 'bg-[#EF323F] text-white' : 'bg-gray-100 text-[#5D5B5B]'
+                }`}
+              >
                 {t.count}
               </span>
             )}

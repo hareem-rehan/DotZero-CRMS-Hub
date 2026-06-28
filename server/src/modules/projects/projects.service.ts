@@ -459,10 +459,7 @@ export const getMyProjects = async (userId: string) => {
   ]);
 
   const seen = new Set<string>();
-  const allProjects = [
-    ...assignments.map((a) => a.project),
-    ...assignedDmProjects,
-  ].filter((p) => {
+  const allProjects = [...assignments.map((a) => a.project), ...assignedDmProjects].filter((p) => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
     return p.status === 'ACTIVE';

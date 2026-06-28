@@ -88,9 +88,11 @@ export default function DmCRDetailPage() {
               <p className="text-xs text-[#5D5B5B]">Status</p>
               <CRStatusBadge
                 status={cr.status}
-                overrides={cr.status === 'PENDING_CLIENT_REVIEW' && cr.clientNotes
-                  ? { PENDING_CLIENT_REVIEW: { label: 'Resubmitted to PO', variant: 'blue' } }
-                  : {}}
+                overrides={
+                  cr.status === 'PENDING_CLIENT_REVIEW' && cr.clientNotes
+                    ? { PENDING_CLIENT_REVIEW: { label: 'Resubmitted to PO', variant: 'blue' } }
+                    : {}
+                }
               />
             </div>
           </div>

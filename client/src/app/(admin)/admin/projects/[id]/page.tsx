@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
-import { ProjectStatusBadge, RoleBadge, CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
+import {
+  ProjectStatusBadge,
+  RoleBadge,
+  CRStatusBadge,
+  CRPriorityBadge,
+} from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useProject } from '@/hooks/useProjects';
 import { useCRs } from '@/hooks/useCRs';
@@ -244,12 +249,24 @@ export default function ProjectDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#D3D3D3] bg-[#F7F7F7]">
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">CR #</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Priority</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Submitted By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Last Updated</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                      CR #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                      Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                      Priority
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                      Submitted By
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                      Last Updated
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#D3D3D3]">
@@ -268,8 +285,12 @@ export default function ProjectDetailPage() {
                           {cr.title}
                         </Link>
                       </td>
-                      <td className="px-6 py-3"><CRStatusBadge status={cr.status} /></td>
-                      <td className="px-6 py-3"><CRPriorityBadge priority={cr.priority} /></td>
+                      <td className="px-6 py-3">
+                        <CRStatusBadge status={cr.status} />
+                      </td>
+                      <td className="px-6 py-3">
+                        <CRPriorityBadge priority={cr.priority} />
+                      </td>
                       <td className="px-6 py-3 text-[#5D5B5B]">{cr.submittedBy.name}</td>
                       <td className="px-6 py-3 text-[#5D5B5B]">
                         {new Date(cr.updatedAt).toLocaleDateString()}

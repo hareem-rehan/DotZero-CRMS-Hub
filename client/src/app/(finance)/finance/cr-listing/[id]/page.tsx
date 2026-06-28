@@ -153,18 +153,12 @@ export default function FinanceCRDetailPage() {
         <div className="flex items-center justify-between">
           <div className="flex gap-3">
             {cr.status === 'APPROVED' && (
-              <Button
-                onClick={() => markInProgress.mutate()}
-                loading={markInProgress.isPending}
-              >
+              <Button onClick={() => markInProgress.mutate()} loading={markInProgress.isPending}>
                 Mark In Progress
               </Button>
             )}
             {cr.status === 'IN_PROGRESS' && (
-              <Button
-                onClick={() => markCompleted.mutate()}
-                loading={markCompleted.isPending}
-              >
+              <Button onClick={() => markCompleted.mutate()} loading={markCompleted.isPending}>
                 Mark Completed
               </Button>
             )}

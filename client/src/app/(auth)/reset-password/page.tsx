@@ -14,10 +14,14 @@ interface ResetForm {
 }
 
 const RULES = [
-  { key: 'length',    label: 'At least 8 characters',      test: (v: string) => v.length >= 8 },
-  { key: 'upper',     label: '1 uppercase letter (A–Z)',    test: (v: string) => /[A-Z]/.test(v) },
-  { key: 'number',    label: '1 number (0–9)',              test: (v: string) => /[0-9]/.test(v) },
-  { key: 'special',   label: '1 special character (!@#…)', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+  { key: 'length', label: 'At least 8 characters', test: (v: string) => v.length >= 8 },
+  { key: 'upper', label: '1 uppercase letter (A–Z)', test: (v: string) => /[A-Z]/.test(v) },
+  { key: 'number', label: '1 number (0–9)', test: (v: string) => /[0-9]/.test(v) },
+  {
+    key: 'special',
+    label: '1 special character (!@#…)',
+    test: (v: string) => /[^A-Za-z0-9]/.test(v),
+  },
 ];
 
 function PasswordStrengthChecks({ password }: { password: string }) {
@@ -27,14 +31,37 @@ function PasswordStrengthChecks({ password }: { password: string }) {
       {RULES.map((r) => {
         const ok = r.test(password);
         return (
-          <li key={r.key} className={`flex items-center gap-2 text-xs ${ok ? 'text-green-600' : 'text-[#EF323F]'}`}>
+          <li
+            key={r.key}
+            className={`flex items-center gap-2 text-xs ${ok ? 'text-green-600' : 'text-[#EF323F]'}`}
+          >
             {ok ? (
-              <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-3.5 w-3.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="h-3.5 w-3.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             )}
             {r.label}

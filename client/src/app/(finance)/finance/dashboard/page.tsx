@@ -243,21 +243,16 @@ export default function FinanceDashboardPage() {
               <table className="w-full text-sm">
                 <thead className="bg-[#F7F7F7]">
                   <tr>
-                    {[
-                      'Project',
-                      'PO',
-                      'CRs',
-                      'Hours',
-                      'Original Cost',
-                      `Cost (${currency})`,
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide"
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    {['Project', 'PO', 'CRs', 'Hours', 'Original Cost', `Cost (${currency})`].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide"
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F0F0F0]">

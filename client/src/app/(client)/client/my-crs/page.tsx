@@ -50,21 +50,43 @@ function CRTableHead() {
   return (
     <thead>
       <tr className="border-b border-[#D3D3D3] bg-gray-50">
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">CR Number</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Title</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Project</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Type</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Priority</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Status</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Submitted</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Last Updated</th>
-        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">Actions</th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          CR Number
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Title
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Project
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Type
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Priority
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Status
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Submitted
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Last Updated
+        </th>
+        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#5D5B5B]">
+          Actions
+        </th>
       </tr>
     </thead>
   );
 }
 
-function CRTableBody({ crs }: { crs: ReturnType<typeof useCRs>['data'] extends { crs: infer C } | undefined ? C : never[] }) {
+function CRTableBody({
+  crs,
+}: {
+  crs: ReturnType<typeof useCRs>['data'] extends { crs: infer C } | undefined ? C : never[];
+}) {
   return (
     <tbody className="divide-y divide-[#F0F0F0]">
       {crs.map((cr) => (
@@ -73,12 +95,21 @@ function CRTableBody({ crs }: { crs: ReturnType<typeof useCRs>['data'] extends {
             <span className="font-mono text-xs text-[#2D2D2D]">{cr.crNumber}</span>
           </td>
           <td className="px-4 py-3 max-w-[220px]">
-            <span className="block truncate text-[#2D2D2D]" title={cr.title}>{cr.title}</span>
+            <span className="block truncate text-[#2D2D2D]" title={cr.title}>
+              {cr.title}
+            </span>
           </td>
           <td className="px-4 py-3 text-[#5D5B5B]">{cr.project.name}</td>
           <td className="px-4 py-3 text-[#5D5B5B] capitalize">{cr.changeType.toLowerCase()}</td>
-          <td className="px-4 py-3"><CRPriorityBadge priority={cr.priority} /></td>
-          <td className="px-4 py-3"><CRStatusBadge status={cr.status} overrides={{ CLIENT_REVISION: { label: 'Resubmitted', variant: 'orange' } }} /></td>
+          <td className="px-4 py-3">
+            <CRPriorityBadge priority={cr.priority} />
+          </td>
+          <td className="px-4 py-3">
+            <CRStatusBadge
+              status={cr.status}
+              overrides={{ CLIENT_REVISION: { label: 'Resubmitted', variant: 'orange' } }}
+            />
+          </td>
           <td className="px-4 py-3 text-[#5D5B5B] text-xs">
             {cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}
           </td>
@@ -87,11 +118,17 @@ function CRTableBody({ crs }: { crs: ReturnType<typeof useCRs>['data'] extends {
           </td>
           <td className="px-4 py-3">
             <div className="flex items-center gap-2">
-              <Link href={`/client/my-crs/${cr.id}`} className="text-xs font-medium text-[#EF323F] hover:underline">
+              <Link
+                href={`/client/my-crs/${cr.id}`}
+                className="text-xs font-medium text-[#EF323F] hover:underline"
+              >
                 View
               </Link>
               {cr.status === 'DRAFT' && (
-                <Link href={`/client/my-crs/${cr.id}/edit`} className="text-xs font-medium text-[#5D5B5B] hover:text-[#2D2D2D] hover:underline">
+                <Link
+                  href={`/client/my-crs/${cr.id}/edit`}
+                  className="text-xs font-medium text-[#5D5B5B] hover:text-[#2D2D2D] hover:underline"
+                >
                   Edit
                 </Link>
               )}
@@ -137,7 +174,9 @@ export default function MyCRsPage() {
     };
 
   // Split: PENDING_CLIENT_REVIEW = DM-created CR awaiting PO confirmation/rejection
-  const pendingClientReviewCRs = (data?.crs ?? []).filter((cr) => cr.status === 'PENDING_CLIENT_REVIEW');
+  const pendingClientReviewCRs = (data?.crs ?? []).filter(
+    (cr) => cr.status === 'PENDING_CLIENT_REVIEW',
+  );
   // ESTIMATED = DM has reviewed & estimated, PO must approve or decline
   const actionRequiredCRs = (data?.crs ?? []).filter((cr) => cr.status === 'ESTIMATED');
   const otherCRs = (data?.crs ?? []).filter(
@@ -152,13 +191,36 @@ export default function MyCRsPage() {
           <Input
             placeholder="Search CR number or title..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="w-64"
           />
-          <Select options={projectOptions} value={projectId} onChange={handleFilterChange(setProjectId)} className="w-44" />
-          <Select options={STATUS_OPTIONS} value={status} onChange={handleFilterChange(setStatus)} className="w-44" />
-          <Select options={TYPE_OPTIONS} value={changeType} onChange={handleFilterChange(setChangeType)} className="w-40" />
-          <Select options={PRIORITY_OPTIONS} value={priority} onChange={handleFilterChange(setPriority)} className="w-36" />
+          <Select
+            options={projectOptions}
+            value={projectId}
+            onChange={handleFilterChange(setProjectId)}
+            className="w-44"
+          />
+          <Select
+            options={STATUS_OPTIONS}
+            value={status}
+            onChange={handleFilterChange(setStatus)}
+            className="w-44"
+          />
+          <Select
+            options={TYPE_OPTIONS}
+            value={changeType}
+            onChange={handleFilterChange(setChangeType)}
+            className="w-40"
+          />
+          <Select
+            options={PRIORITY_OPTIONS}
+            value={priority}
+            onChange={handleFilterChange(setPriority)}
+            className="w-36"
+          />
         </div>
         <Button onClick={() => router.push('/client/my-crs/new')}>+ New Change Request</Button>
       </div>
@@ -174,8 +236,18 @@ export default function MyCRsPage() {
       ) : !data || data.crs.length === 0 ? (
         <div className="rounded-lg border border-[#D3D3D3] bg-white">
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <svg className="h-12 w-12 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="h-12 w-12 text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             <p className="text-sm text-[#5D5B5B]">No change requests found</p>
             <Button variant="secondary" onClick={() => router.push('/client/my-crs/new')}>
@@ -189,8 +261,18 @@ export default function MyCRsPage() {
           {pendingClientReviewCRs.length > 0 && (
             <div className="rounded-lg border border-blue-200 bg-white overflow-hidden shadow-sm">
               <div className="flex items-center gap-2.5 border-b border-blue-200 bg-blue-50 px-5 py-3">
-                <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg
+                  className="h-4 w-4 text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
                 <h2 className="text-sm font-semibold text-blue-900">
                   Review from Delivery Manager
@@ -198,7 +280,9 @@ export default function MyCRsPage() {
                     {pendingClientReviewCRs.length}
                   </span>
                 </h2>
-                <p className="text-xs text-blue-700">— your DM created these on your behalf, please review</p>
+                <p className="text-xs text-blue-700">
+                  — your DM created these on your behalf, please review
+                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -213,8 +297,18 @@ export default function MyCRsPage() {
           {actionRequiredCRs.length > 0 && (
             <div className="rounded-lg border border-orange-200 bg-white overflow-hidden shadow-sm">
               <div className="flex items-center gap-2.5 border-b border-orange-200 bg-orange-50 px-5 py-3">
-                <svg className="h-4 w-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <svg
+                  className="h-4 w-4 text-orange-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  />
                 </svg>
                 <h2 className="text-sm font-semibold text-orange-900">
                   Action Required
@@ -222,7 +316,9 @@ export default function MyCRsPage() {
                     {actionRequiredCRs.length}
                   </span>
                 </h2>
-                <p className="text-xs text-orange-700">— estimated by DM, awaiting your approval or decline</p>
+                <p className="text-xs text-orange-700">
+                  — estimated by DM, awaiting your approval or decline
+                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -262,7 +358,11 @@ export default function MyCRsPage() {
             <Button variant="secondary" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </Button>
-            <Button variant="secondary" disabled={page === data.totalPages} onClick={() => setPage((p) => p + 1)}>
+            <Button
+              variant="secondary"
+              disabled={page === data.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
               Next
             </Button>
           </div>

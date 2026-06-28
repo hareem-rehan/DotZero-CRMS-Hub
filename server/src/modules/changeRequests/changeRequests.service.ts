@@ -764,7 +764,8 @@ export const createDMInitiatedCR = async (input: CreateDMInitiatedCRInput, actor
     select: { id: true, status: true, sowReference: true, clientName: true, assignedDmId: true },
   });
   if (!project) throw new AppError(404, 'Project not found');
-  if (project.status === 'ARCHIVED') throw new AppError(400, 'Cannot create CR for an archived project');
+  if (project.status === 'ARCHIVED')
+    throw new AppError(400, 'Cannot create CR for an archived project');
 
   // Verify actor is DM for this project (assigned or member)
   const [isDmAssigned, isMember] = await Promise.all([
@@ -844,14 +845,17 @@ export const updateDMDraft = async (id: string, input: UpdateDMDraftInput, actor
   if (!cr) throw new AppError(404, 'Change request not found');
   if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
   if (cr.createdByDmId !== actorId) throw new AppError(403, 'Access denied');
-  if (!['DRAFT', 'CLIENT_REVISION'].includes(cr.status)) throw new AppError(400, 'Only DRAFT or returned CRs can be edited');
+  if (!['DRAFT', 'CLIENT_REVISION'].includes(cr.status))
+    throw new AppError(400, 'Only DRAFT or returned CRs can be edited');
 
   await prisma.changeRequest.update({
     where: { id },
     data: {
       ...(input.title !== undefined && { title: input.title }),
       ...(input.description !== undefined && { description: input.description }),
-      ...(input.businessJustification !== undefined && { businessJustification: input.businessJustification }),
+      ...(input.businessJustification !== undefined && {
+        businessJustification: input.businessJustification,
+      }),
       ...(input.priority !== undefined && { priority: input.priority }),
       ...(input.changeType !== undefined && { changeType: input.changeType }),
       ...(input.requestingParty !== undefined && { requestingParty: input.requestingParty }),
@@ -861,19 +865,32 @@ export const updateDMDraft = async (id: string, input: UpdateDMDraftInput, actor
   });
 
   // Update estimation if provided
-  const hasEstimationUpdate = input.estimatedHours !== undefined || input.timelineImpact !== undefined ||
-    input.affectedDeliverables !== undefined || input.revisedMilestones !== undefined ||
-    input.resourcesRequired !== undefined || input.recommendation !== undefined || input.dmSignature !== undefined;
+  const hasEstimationUpdate =
+    input.estimatedHours !== undefined ||
+    input.timelineImpact !== undefined ||
+    input.affectedDeliverables !== undefined ||
+    input.revisedMilestones !== undefined ||
+    input.resourcesRequired !== undefined ||
+    input.recommendation !== undefined ||
+    input.dmSignature !== undefined;
 
   if (hasEstimationUpdate && cr.impactAnalysis) {
     await prisma.impactAnalysis.update({
       where: { changeRequestId: id },
       data: {
-        ...(input.estimatedHours !== undefined && { estimatedHours: new Decimal(input.estimatedHours) }),
+        ...(input.estimatedHours !== undefined && {
+          estimatedHours: new Decimal(input.estimatedHours),
+        }),
         ...(input.timelineImpact !== undefined && { timelineImpact: input.timelineImpact }),
-        ...(input.affectedDeliverables !== undefined && { affectedDeliverables: input.affectedDeliverables }),
-        ...(input.revisedMilestones !== undefined && { revisedMilestones: input.revisedMilestones }),
-        ...(input.resourcesRequired !== undefined && { resourcesRequired: input.resourcesRequired }),
+        ...(input.affectedDeliverables !== undefined && {
+          affectedDeliverables: input.affectedDeliverables,
+        }),
+        ...(input.revisedMilestones !== undefined && {
+          revisedMilestones: input.revisedMilestones,
+        }),
+        ...(input.resourcesRequired !== undefined && {
+          resourcesRequired: input.resourcesRequired,
+        }),
         ...(input.recommendation !== undefined && { recommendation: input.recommendation }),
         ...(input.dmSignature !== undefined && { dmSignature: input.dmSignature }),
       },
@@ -899,11 +916,13 @@ export const sendToClient = async (id: string, actorId: string) => {
   });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
-  if (cr.createdByDmId !== actorId) throw new AppError(403, 'Only the DM who created this CR can send it');
+  if (cr.createdByDmId !== actorId)
+    throw new AppError(403, 'Only the DM who created this CR can send it');
   assertTransition(cr.status, 'PENDING_CLIENT_REVIEW');
 
   if (!cr.title?.trim()) throw new AppError(400, 'Title is required before sending to client');
-  if (!cr.impactAnalysis) throw new AppError(400, 'Estimation is required before sending to client');
+  if (!cr.impactAnalysis)
+    throw new AppError(400, 'Estimation is required before sending to client');
   if (!cr.impactAnalysis.estimatedHours) throw new AppError(400, 'Estimated hours are required');
 
   const dm = await prisma.user.findUnique({ where: { id: actorId }, select: { name: true } });
@@ -966,7 +985,8 @@ export const clientConfirmCR = async (id: string, actorId: string, input: Client
   const updateData: Record<string, unknown> = { status: 'ESTIMATED' };
   if (input.clientNotes !== undefined) updateData.clientNotes = input.clientNotes;
   if (input.description !== undefined) updateData.description = input.description;
-  if (input.businessJustification !== undefined) updateData.businessJustification = input.businessJustification;
+  if (input.businessJustification !== undefined)
+    updateData.businessJustification = input.businessJustification;
 
   await prisma.$transaction([
     prisma.changeRequest.update({ where: { id }, data: updateData }),
@@ -997,7 +1017,11 @@ export const clientConfirmCR = async (id: string, actorId: string, input: Client
 
 // ─── DM-initiated: client edits description / business justification ─────────
 
-export const clientReviewEditCR = async (id: string, actorId: string, input: ClientReviewEditInput) => {
+export const clientReviewEditCR = async (
+  id: string,
+  actorId: string,
+  input: ClientReviewEditInput,
+) => {
   const cr = await prisma.changeRequest.findUnique({
     where: { id },
     select: { status: true, initiatedByDm: true, submittedById: true },
@@ -1010,7 +1034,8 @@ export const clientReviewEditCR = async (id: string, actorId: string, input: Cli
 
   const updateData: Record<string, unknown> = {};
   if (input.description !== undefined) updateData.description = input.description;
-  if (input.businessJustification !== undefined) updateData.businessJustification = input.businessJustification;
+  if (input.businessJustification !== undefined)
+    updateData.businessJustification = input.businessJustification;
 
   return prisma.changeRequest.update({ where: { id }, data: updateData });
 };
@@ -1083,7 +1108,8 @@ export const poResubmitWithEdits = async (
   if (!cr) throw new AppError(404, 'Change request not found');
   if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
   if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
-  if (cr.clientRevisionUsed) throw new AppError(400, 'You have already used your one revision on this CR');
+  if (cr.clientRevisionUsed)
+    throw new AppError(400, 'You have already used your one revision on this CR');
   assertTransition(cr.status, 'CLIENT_REVISION');
 
   await prisma.$transaction([
@@ -1092,7 +1118,9 @@ export const poResubmitWithEdits = async (
       data: {
         status: 'CLIENT_REVISION',
         ...(input.description !== undefined && { description: input.description }),
-        ...(input.businessJustification !== undefined && { businessJustification: input.businessJustification }),
+        ...(input.businessJustification !== undefined && {
+          businessJustification: input.businessJustification,
+        }),
         ...(input.clientNotes !== undefined && { clientNotes: input.clientNotes }),
       },
     }),
@@ -1147,7 +1175,8 @@ export const dmReviewResubmit = async (
   });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
-  if (cr.createdByDmId !== actorId) throw new AppError(403, 'Only the DM who created this CR can review it');
+  if (cr.createdByDmId !== actorId)
+    throw new AppError(403, 'Only the DM who created this CR can review it');
   assertTransition(cr.status, 'ESTIMATED');
 
   if (!cr.impactAnalysis) throw new AppError(500, 'Estimation data is missing');
@@ -1167,11 +1196,19 @@ export const dmReviewResubmit = async (
       data: {
         isDraft: false,
         submittedAt: new Date(),
-        ...(input.estimatedHours !== undefined && { estimatedHours: new Decimal(input.estimatedHours) }),
+        ...(input.estimatedHours !== undefined && {
+          estimatedHours: new Decimal(input.estimatedHours),
+        }),
         ...(input.timelineImpact !== undefined && { timelineImpact: input.timelineImpact }),
-        ...(input.affectedDeliverables !== undefined && { affectedDeliverables: input.affectedDeliverables }),
-        ...(input.revisedMilestones !== undefined && { revisedMilestones: input.revisedMilestones }),
-        ...(input.resourcesRequired !== undefined && { resourcesRequired: input.resourcesRequired }),
+        ...(input.affectedDeliverables !== undefined && {
+          affectedDeliverables: input.affectedDeliverables,
+        }),
+        ...(input.revisedMilestones !== undefined && {
+          revisedMilestones: input.revisedMilestones,
+        }),
+        ...(input.resourcesRequired !== undefined && {
+          resourcesRequired: input.resourcesRequired,
+        }),
         ...(input.recommendation !== undefined && { recommendation: input.recommendation }),
         ...(input.dmSignature !== undefined && { dmSignature: input.dmSignature }),
       },
@@ -1235,7 +1272,11 @@ export const submitCR = async (id: string, actorId: string) => {
   });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
-  if (cr.initiatedByDm) throw new AppError(400, 'This CR was created by your DM. Use the review flow to confirm or reject it.');
+  if (cr.initiatedByDm)
+    throw new AppError(
+      400,
+      'This CR was created by your DM. Use the review flow to confirm or reject it.',
+    );
 
   assertTransition(cr.status, 'SUBMITTED');
 
@@ -1321,7 +1362,12 @@ export const markInProgress = async (id: string, actorId: string, _actorRole: st
   const updated = await prisma.$transaction([
     prisma.changeRequest.update({ where: { id }, data: { status: 'IN_PROGRESS' } }),
     prisma.statusHistory.create({
-      data: { changeRequestId: id, fromStatus: cr.status, toStatus: 'IN_PROGRESS', changedById: actorId },
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status,
+        toStatus: 'IN_PROGRESS',
+        changedById: actorId,
+      },
     }),
   ]);
 
@@ -1347,7 +1393,12 @@ export const markCompleted = async (id: string, actorId: string, _actorRole: str
   const updated = await prisma.$transaction([
     prisma.changeRequest.update({ where: { id }, data: { status: 'COMPLETED' } }),
     prisma.statusHistory.create({
-      data: { changeRequestId: id, fromStatus: cr.status, toStatus: 'COMPLETED', changedById: actorId },
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status,
+        toStatus: 'COMPLETED',
+        changedById: actorId,
+      },
     }),
   ]);
 
@@ -1371,13 +1422,20 @@ export const recallFromClient = async (id: string, actorId: string) => {
   });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
-  if (cr.createdByDmId !== actorId) throw new AppError(403, 'Only the DM who created this CR can recall it');
-  if (cr.status !== 'PENDING_CLIENT_REVIEW') throw new AppError(400, 'CR can only be recalled while awaiting client review');
+  if (cr.createdByDmId !== actorId)
+    throw new AppError(403, 'Only the DM who created this CR can recall it');
+  if (cr.status !== 'PENDING_CLIENT_REVIEW')
+    throw new AppError(400, 'CR can only be recalled while awaiting client review');
 
   await prisma.$transaction([
     prisma.changeRequest.update({ where: { id }, data: { status: 'DRAFT' } }),
     prisma.statusHistory.create({
-      data: { changeRequestId: id, fromStatus: 'PENDING_CLIENT_REVIEW', toStatus: 'DRAFT', changedById: actorId },
+      data: {
+        changeRequestId: id,
+        fromStatus: 'PENDING_CLIENT_REVIEW',
+        toStatus: 'DRAFT',
+        changedById: actorId,
+      },
     }),
   ]);
 
@@ -1386,7 +1444,12 @@ export const recallFromClient = async (id: string, actorId: string) => {
     actorId,
     entityType: 'ChangeRequest',
     entityId: id,
-    metadata: { crNumber: cr.crNumber, from: 'PENDING_CLIENT_REVIEW', to: 'DRAFT', reason: 'DM recalled' },
+    metadata: {
+      crNumber: cr.crNumber,
+      from: 'PENDING_CLIENT_REVIEW',
+      to: 'DRAFT',
+      reason: 'DM recalled',
+    },
   });
 
   return prisma.changeRequest.findUnique({ where: { id } });

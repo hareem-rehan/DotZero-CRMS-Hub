@@ -418,9 +418,10 @@ export interface CreateDMInitiatedCRPayload {
   dmSignature?: string;
 }
 
-export const useCreateDMInitiatedCR = (
-  callbacks?: { onSuccess?: (cr: CRDetail) => void; onError?: (msg: string) => void },
-) => {
+export const useCreateDMInitiatedCR = (callbacks?: {
+  onSuccess?: (cr: CRDetail) => void;
+  onError?: (msg: string) => void;
+}) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateDMInitiatedCRPayload) => {
@@ -501,7 +502,10 @@ export const useClientReviewEdit = (
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { description?: string; businessJustification?: string }) => {
-      const { data } = await apiClient.patch(`/change-requests/${crId}/client-review-edit`, payload);
+      const { data } = await apiClient.patch(
+        `/change-requests/${crId}/client-review-edit`,
+        payload,
+      );
       return data.data;
     },
     onSuccess: () => {
@@ -523,7 +527,11 @@ export const useClientConfirmCR = (
 ) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { clientNotes?: string; description?: string; businessJustification?: string }) => {
+    mutationFn: async (payload: {
+      clientNotes?: string;
+      description?: string;
+      businessJustification?: string;
+    }) => {
       const { data } = await apiClient.post(`/change-requests/${crId}/client-confirm`, payload);
       return data.data;
     },
@@ -610,10 +618,7 @@ export const useDMReviewResubmit = (
       recommendation?: string;
       dmSignature?: string;
     }) => {
-      const { data } = await apiClient.post(
-        `/change-requests/${crId}/dm-review-resubmit`,
-        payload,
-      );
+      const { data } = await apiClient.post(`/change-requests/${crId}/dm-review-resubmit`, payload);
       return data.data;
     },
     onSuccess: () => {
@@ -669,7 +674,8 @@ export const useMarkInProgress = (
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
       callbacks?.onError?.(msg);
     },
   });
@@ -691,7 +697,8 @@ export const useMarkCompleted = (
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
       callbacks?.onError?.(msg);
     },
   });
@@ -713,7 +720,8 @@ export const useRecallFromClient = (
       callbacks?.onSuccess?.();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
       callbacks?.onError?.(msg);
     },
   });

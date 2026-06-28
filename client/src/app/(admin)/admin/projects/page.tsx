@@ -58,9 +58,17 @@ function ActionsMenu({
       const spaceBelow = window.innerHeight - rect.bottom;
       if (spaceBelow < 200) {
         // flip upward
-        setMenuStyle({ position: 'fixed', bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
+        setMenuStyle({
+          position: 'fixed',
+          bottom: window.innerHeight - rect.top + 4,
+          right: window.innerWidth - rect.right,
+        });
       } else {
-        setMenuStyle({ position: 'fixed', top: rect.bottom + 4, right: window.innerWidth - rect.right });
+        setMenuStyle({
+          position: 'fixed',
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right,
+        });
       }
     }
     setOpen((v) => !v);

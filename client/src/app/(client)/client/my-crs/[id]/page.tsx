@@ -99,12 +99,19 @@ function ResultModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl">
         <div className={`flex items-center justify-between border-b border-[#E5E5E5] px-6 py-4`}>
-          <h3 className={`text-base font-semibold ${isSuccess ? 'text-green-700' : 'text-red-600'}`}>
+          <h3
+            className={`text-base font-semibold ${isSuccess ? 'text-green-700' : 'text-red-600'}`}
+          >
             {isSuccess ? 'Success' : 'Error'}
           </h3>
           <button onClick={onClose} className="text-[#5D5B5B] hover:text-[#2D2D2D]">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -157,30 +164,47 @@ function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: ()
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl max-h-[90vh]">
         {/* Header */}
         <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#E5E5E5] bg-white px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-[#2D2D2D]">Version {version.versionNumber} Snapshot</h2>
+            <h2 className="text-base font-semibold text-[#2D2D2D]">
+              Version {version.versionNumber} Snapshot
+            </h2>
             <p className="mt-0.5 text-xs text-[#5D5B5B]">
               Saved on {new Date(version.createdAt).toLocaleDateString()}
             </p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-[#5D5B5B] hover:bg-[#F7F7F7]">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
         {/* Body */}
         <div className="overflow-y-auto space-y-5 p-6">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <SnapField label="Status"><CRStatusBadge status={snap.status} /></SnapField>
-            {snap.priority && <SnapField label="Priority"><CRPriorityBadge priority={snap.priority} /></SnapField>}
+            <SnapField label="Status">
+              <CRStatusBadge status={snap.status} />
+            </SnapField>
+            {snap.priority && (
+              <SnapField label="Priority">
+                <CRPriorityBadge priority={snap.priority} />
+              </SnapField>
+            )}
             {snap.changeType && <SnapField label="Change Type" value={snap.changeType} />}
-            {snap.requestingParty && <SnapField label="Requesting Party" value={snap.requestingParty} />}
+            {snap.requestingParty && (
+              <SnapField label="Requesting Party" value={snap.requestingParty} />
+            )}
             <SnapField label="Snapshot Date" value={new Date(snap.snapshotAt).toLocaleString()} />
           </div>
           <div>
@@ -189,7 +213,9 @@ function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: ()
           </div>
           {snap.description && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Description</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                Description
+              </p>
               <div
                 className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.description) }}
@@ -198,7 +224,9 @@ function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: ()
           )}
           {snap.businessJustification && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">Business Justification</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">
+                Business Justification
+              </p>
               <div
                 className="mt-1 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-3 prose prose-sm max-w-none text-[#2D2D2D]"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(snap.businessJustification) }}
@@ -207,11 +235,18 @@ function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: ()
           )}
           {snap.attachments && snap.attachments.length > 0 && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B] mb-2">Attachments</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B] mb-2">
+                Attachments
+              </p>
               <div className="flex flex-wrap gap-2">
                 {snap.attachments.map((a) => (
-                  <a key={a.id} href={a.fileUrl} target="_blank" rel="noopener noreferrer"
-                    className="rounded-md border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs text-[#2D2D2D] hover:bg-gray-50">
+                  <a
+                    key={a.id}
+                    href={a.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border border-[#D3D3D3] bg-white px-3 py-1.5 text-xs text-[#2D2D2D] hover:bg-gray-50"
+                  >
                     {a.fileName}
                   </a>
                 ))}
@@ -240,17 +275,29 @@ function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: ()
                   <SnapField label="Timeline Impact" value={snap.impactAnalysis.timelineImpact} />
                 )}
                 {snap.impactAnalysis.affectedDeliverables && (
-                  <SnapField label="Affected Deliverables" value={snap.impactAnalysis.affectedDeliverables} />
+                  <SnapField
+                    label="Affected Deliverables"
+                    value={snap.impactAnalysis.affectedDeliverables}
+                  />
                 )}
                 {snap.impactAnalysis.revisedMilestones && (
-                  <SnapField label="Revised Milestones" value={snap.impactAnalysis.revisedMilestones} />
+                  <SnapField
+                    label="Revised Milestones"
+                    value={snap.impactAnalysis.revisedMilestones}
+                  />
                 )}
                 {snap.impactAnalysis.resourcesRequired && (
-                  <SnapField label="Resources Required" value={snap.impactAnalysis.resourcesRequired} />
+                  <SnapField
+                    label="Resources Required"
+                    value={snap.impactAnalysis.resourcesRequired}
+                  />
                 )}
                 {snap.impactAnalysis.recommendation && (
                   <div className="col-span-2">
-                    <SnapField label="DM Recommendation" value={snap.impactAnalysis.recommendation} />
+                    <SnapField
+                      label="DM Recommendation"
+                      value={snap.impactAnalysis.recommendation}
+                    />
                   </div>
                 )}
               </div>
@@ -259,14 +306,24 @@ function VersionModal({ version, onClose }: { version: CRVersionRow; onClose: ()
         </div>
         {/* Footer */}
         <div className="sticky bottom-0 shrink-0 border-t border-[#E5E5E5] bg-white px-6 py-3 flex justify-end">
-          <Button variant="secondary" onClick={onClose}>Close</Button>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </div>
     </div>
   );
 }
 
-function SnapField({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
+function SnapField({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wide text-[#5D5B5B]">{label}</p>
@@ -321,8 +378,12 @@ export default function CRDetailPage() {
   const { data: versions } = useCRVersions(id);
 
   // Result modal (replaces toast notifications)
-  const [resultModal, setResultModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const showResult = (type: 'success' | 'error', message: string) => setResultModal({ type, message });
+  const [resultModal, setResultModal] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const showResult = (type: 'success' | 'error', message: string) =>
+    setResultModal({ type, message });
 
   // Submit
   const submitCR = useSubmitCR();
@@ -400,7 +461,10 @@ export default function CRDetailPage() {
   const [editDescription, setEditDescription] = useState('');
   const [editBizJustification, setEditBizJustification] = useState('');
   const clientReviewEdit = useClientReviewEdit(id, {
-    onSuccess: () => { showResult('success', 'Changes saved'); setIsEditing(false); },
+    onSuccess: () => {
+      showResult('success', 'Changes saved');
+      setIsEditing(false);
+    },
     onError: (msg) => showResult('error', msg),
   });
 
@@ -423,7 +487,10 @@ export default function CRDetailPage() {
   const [poResubClientNotes, setPoResubClientNotes] = useState('');
   const [poResubReason, setPoResubReason] = useState('');
   const poResubmitWithEdits = usePOResubmitWithEdits(id, {
-    onSuccess: () => { showResult('success', 'Edits submitted to DM'); setShowPOResubmit(false); },
+    onSuccess: () => {
+      showResult('success', 'Edits submitted to DM');
+      setShowPOResubmit(false);
+    },
     onError: (msg) => showResult('error', msg),
   });
 
@@ -469,8 +536,7 @@ export default function CRDetailPage() {
   const isCancellable = !['APPROVED', 'DECLINED', 'CANCELLED', 'COMPLETED'].includes(cr.status);
 
   const isDmInitiated = cr.initiatedByDm;
-  const canPOResubmitWithEdits =
-    isDmInitiated && isEstimated && !cr.clientRevisionUsed;
+  const canPOResubmitWithEdits = isDmInitiated && isEstimated && !cr.clientRevisionUsed;
 
   // ── Resubmission limit checks (mirrors backend rules) ──
   const MAX_RESUBMISSIONS = 2;
@@ -491,11 +557,10 @@ export default function CRDetailPage() {
   const resubDisabledReason = resubLimitReached
     ? `Maximum ${MAX_RESUBMISSIONS} resubmissions reached`
     : resubWindowExpired
-    ? '72-hour resubmission window has expired'
-    : null;
-  const resubHoursRemaining = !resubWindowExpired && triggerEntry
-    ? Math.ceil(72 - hoursSinceTrigger)
-    : null;
+      ? '72-hour resubmission window has expired'
+      : null;
+  const resubHoursRemaining =
+    !resubWindowExpired && triggerEntry ? Math.ceil(72 - hoursSinceTrigger) : null;
 
   return (
     <PageWrapper title={cr.crNumber}>
@@ -537,11 +602,23 @@ export default function CRDetailPage() {
                   <Button variant="secondary" onClick={() => setShowDefer(true)}>
                     Defer
                   </Button>
-                  <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
+                  <ResubmitButton
+                    canResubmit={canResubmit}
+                    disabledReason={resubDisabledReason}
+                    onResubmit={openResubmit}
+                  />
                 </>
               )}
               {canPOResubmitWithEdits && (
-                <Button variant="secondary" onClick={() => { setPoResubDescription(cr.description ?? ''); setPoResubClientNotes(cr.clientNotes ?? ''); setPoResubReason(''); setShowPOResubmit(true); }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setPoResubDescription(cr.description ?? '');
+                    setPoResubClientNotes(cr.clientNotes ?? '');
+                    setPoResubReason('');
+                    setShowPOResubmit(true);
+                  }}
+                >
                   Submit Edits
                 </Button>
               )}
@@ -552,19 +629,37 @@ export default function CRDetailPage() {
             </>
           )}
           {isApproved && !isDmInitiated && (
-            <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
+            <ResubmitButton
+              canResubmit={canResubmit}
+              disabledReason={resubDisabledReason}
+              onResubmit={openResubmit}
+              label="Resubmit CR"
+            />
           )}
           {isDeclined && !isDmInitiated && (
-            <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
+            <ResubmitButton
+              canResubmit={canResubmit}
+              disabledReason={resubDisabledReason}
+              onResubmit={openResubmit}
+              label="Resubmit CR"
+            />
           )}
           {isDeferred && !isDmInitiated && (
-            <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
+            <ResubmitButton
+              canResubmit={canResubmit}
+              disabledReason={resubDisabledReason}
+              onResubmit={openResubmit}
+              label="Resubmit CR"
+            />
           )}
-          {isCancellable && !isDraft && !isEstimated && !(isPendingClientReview && isDmInitiated) && (
-            <Button variant="ghost" onClick={() => setShowCancel(true)}>
-              Cancel CR
-            </Button>
-          )}
+          {isCancellable &&
+            !isDraft &&
+            !isEstimated &&
+            !(isPendingClientReview && isDmInitiated) && (
+              <Button variant="ghost" onClick={() => setShowCancel(true)}>
+                Cancel CR
+              </Button>
+            )}
           {(versions?.length ?? 0) > 0 && (
             <Button variant="ghost" onClick={() => setShowVersions((v) => !v)}>
               {showVersions ? 'Hide' : 'Version History'} ({versions!.length})
@@ -639,7 +734,11 @@ export default function CRDetailPage() {
           <strong>Created by your Delivery Manager on your behalf.</strong>
           {isPendingClientReview && ' Please review and approve, decline, or return it to the DM.'}
           {isEstimated && canPOResubmitWithEdits && (
-            <span> You have <strong>1 round of edits</strong> remaining — use it to send changes back to your DM for review.</span>
+            <span>
+              {' '}
+              You have <strong>1 round of edits</strong> remaining — use it to send changes back to
+              your DM for review.
+            </span>
           )}
           {isEstimated && !canPOResubmitWithEdits && cr.clientRevisionUsed && (
             <span> Your edit round has been used. Please approve or decline this CR.</span>
@@ -647,15 +746,27 @@ export default function CRDetailPage() {
         </div>
       )}
       {/* Resubmit countdown banner (standard CRs only) */}
-      {!isDmInitiated && resubHoursRemaining !== null && (isDeclined || isDeferred || isEstimated) && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
-          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Resubmission window closes in <strong className="mx-1">{resubHoursRemaining}h</strong>
-          {resubmissionCount > 0 && <span className="text-amber-600">· {MAX_RESUBMISSIONS - resubmissionCount} of {MAX_RESUBMISSIONS} resubmissions remaining</span>}
-        </div>
-      )}
+      {!isDmInitiated &&
+        resubHoursRemaining !== null &&
+        (isDeclined || isDeferred || isEstimated) && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+            <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Resubmission window closes in <strong className="mx-1">{resubHoursRemaining}h</strong>
+            {resubmissionCount > 0 && (
+              <span className="text-amber-600">
+                · {MAX_RESUBMISSIONS - resubmissionCount} of {MAX_RESUBMISSIONS} resubmissions
+                remaining
+              </span>
+            )}
+          </div>
+        )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main */}
@@ -669,7 +780,10 @@ export default function CRDetailPage() {
                   {cr.project.name} · {cr.project.code}
                 </p>
               </div>
-              <CRStatusBadge status={cr.status} overrides={{ CLIENT_REVISION: { label: 'Resubmitted', variant: 'orange' } }} />
+              <CRStatusBadge
+                status={cr.status}
+                overrides={{ CLIENT_REVISION: { label: 'Resubmitted', variant: 'orange' } }}
+              />
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div>
@@ -709,7 +823,11 @@ export default function CRDetailPage() {
                 <h3 className="text-sm font-semibold text-[#2D2D2D]">Description</h3>
                 {isPendingClientReview && isDmInitiated && !isEditing && (
                   <button
-                    onClick={() => { setEditDescription(cr.description ?? ''); setEditBizJustification(cr.businessJustification ?? ''); setIsEditing(true); }}
+                    onClick={() => {
+                      setEditDescription(cr.description ?? '');
+                      setEditBizJustification(cr.businessJustification ?? '');
+                      setIsEditing(true);
+                    }}
                     className="text-xs font-medium text-[#EF323F] hover:underline"
                   >
                     Edit
@@ -741,7 +859,11 @@ export default function CRDetailPage() {
                 <h3 className="text-sm font-semibold text-[#2D2D2D]">Business Justification</h3>
                 {isPendingClientReview && isDmInitiated && !isEditing && (
                   <button
-                    onClick={() => { setEditDescription(cr.description ?? ''); setEditBizJustification(cr.businessJustification ?? ''); setIsEditing(true); }}
+                    onClick={() => {
+                      setEditDescription(cr.description ?? '');
+                      setEditBizJustification(cr.businessJustification ?? '');
+                      setIsEditing(true);
+                    }}
                     className="text-xs font-medium text-[#EF323F] hover:underline"
                   >
                     Edit
@@ -758,12 +880,19 @@ export default function CRDetailPage() {
                   />
                   <div className="mt-3 flex gap-2">
                     <Button
-                      onClick={() => clientReviewEdit.mutate({ description: editDescription, businessJustification: editBizJustification })}
+                      onClick={() =>
+                        clientReviewEdit.mutate({
+                          description: editDescription,
+                          businessJustification: editBizJustification,
+                        })
+                      }
                       loading={clientReviewEdit.isPending}
                     >
                       Save Changes
                     </Button>
-                    <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
+                    <Button variant="secondary" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
                   </div>
                 </>
               ) : cr.businessJustification ? (
@@ -800,7 +929,9 @@ export default function CRDetailPage() {
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
                   <dt className="text-blue-700">Estimated Hours</dt>
-                  <dd className="mt-0.5 text-xl font-bold text-blue-900">{cr.impactAnalysis.estimatedHours}h</dd>
+                  <dd className="mt-0.5 text-xl font-bold text-blue-900">
+                    {cr.impactAnalysis.estimatedHours}h
+                  </dd>
                 </div>
                 {cr.impactAnalysis.timelineImpact && (
                   <div>
@@ -811,19 +942,27 @@ export default function CRDetailPage() {
                 {cr.impactAnalysis.affectedDeliverables && (
                   <div className="col-span-2">
                     <dt className="text-blue-700">Affected Deliverables</dt>
-                    <dd className="mt-0.5 text-blue-900">{cr.impactAnalysis.affectedDeliverables}</dd>
+                    <dd className="mt-0.5 text-blue-900">
+                      {cr.impactAnalysis.affectedDeliverables}
+                    </dd>
                   </div>
                 )}
                 {cr.impactAnalysis.recommendation && (
                   <div className="col-span-2">
                     <dt className="text-blue-700">DM Recommendation</dt>
-                    <dd className="mt-0.5 font-medium text-blue-900">{cr.impactAnalysis.recommendation}</dd>
+                    <dd className="mt-0.5 font-medium text-blue-900">
+                      {cr.impactAnalysis.recommendation}
+                    </dd>
                   </div>
                 )}
               </dl>
               <div className="mt-4 flex gap-2">
-                <Button variant="secondary" onClick={() => setShowClientReject(true)}>Return to DM</Button>
-                <Button variant="secondary" onClick={() => setShowDecline(true)}>Decline</Button>
+                <Button variant="secondary" onClick={() => setShowClientReject(true)}>
+                  Return to DM
+                </Button>
+                <Button variant="secondary" onClick={() => setShowDecline(true)}>
+                  Decline
+                </Button>
                 <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
               </div>
             </div>
@@ -871,7 +1010,11 @@ export default function CRDetailPage() {
                     Decline
                   </Button>
                   {!isDmInitiated && (
-                    <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
+                    <ResubmitButton
+                      canResubmit={canResubmit}
+                      disabledReason={resubDisabledReason}
+                      onResubmit={openResubmit}
+                    />
                   )}
                   <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
                 </div>
@@ -893,7 +1036,13 @@ export default function CRDetailPage() {
                   </p>
                 </div>
                 {isApproved && !isDmInitiated && (
-                  <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                  <ResubmitButton
+                    canResubmit={canResubmit}
+                    disabledReason={resubDisabledReason}
+                    onResubmit={openResubmit}
+                    label="Resubmit CR"
+                    className="shrink-0"
+                  />
                 )}
               </div>
             </div>
@@ -922,7 +1071,13 @@ export default function CRDetailPage() {
                       )}
                     </div>
                     {!isDmInitiated && (
-                      <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                      <ResubmitButton
+                        canResubmit={canResubmit}
+                        disabledReason={resubDisabledReason}
+                        onResubmit={openResubmit}
+                        label="Resubmit CR"
+                        className="shrink-0"
+                      />
                     )}
                   </div>
                 </div>
@@ -952,7 +1107,13 @@ export default function CRDetailPage() {
                       )}
                     </div>
                     {!isDmInitiated && (
-                      <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                      <ResubmitButton
+                        canResubmit={canResubmit}
+                        disabledReason={resubDisabledReason}
+                        onResubmit={openResubmit}
+                        label="Resubmit CR"
+                        className="shrink-0"
+                      />
                     )}
                   </div>
                 </div>
@@ -1290,7 +1451,13 @@ export default function CRDetailPage() {
                     description: resubDescription,
                     businessJustification: resubJustification,
                     priority: resubPriority as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
-                    changeType: resubChangeType as 'SCOPE' | 'TIMELINE' | 'BUDGET' | 'RESOURCE' | 'TECHNICAL' | 'OTHER',
+                    changeType: resubChangeType as
+                      | 'SCOPE'
+                      | 'TIMELINE'
+                      | 'BUDGET'
+                      | 'RESOURCE'
+                      | 'TECHNICAL'
+                      | 'OTHER',
                   })
                 }
                 loading={resubmitCR.isPending}
@@ -1313,10 +1480,13 @@ export default function CRDetailPage() {
         <Modal title="Return CR to DM" onClose={() => setShowClientReject(false)}>
           <div className="space-y-4">
             <p className="text-sm text-[#5D5B5B]">
-              This will send <strong>{cr.crNumber}</strong> back to the Delivery Manager. They will be notified and can revise and re-send it.
+              This will send <strong>{cr.crNumber}</strong> back to the Delivery Manager. They will
+              be notified and can revise and re-send it.
             </p>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Reason <span className="text-[#EF323F]">*</span></label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Reason <span className="text-[#EF323F]">*</span>
+              </label>
               <textarea
                 rows={4}
                 value={clientRejectReason}
@@ -1326,7 +1496,9 @@ export default function CRDetailPage() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setShowClientReject(false)}>Cancel</Button>
+              <Button variant="secondary" onClick={() => setShowClientReject(false)}>
+                Cancel
+              </Button>
               <Button
                 onClick={() => clientRejectCR.mutate(clientRejectReason)}
                 loading={clientRejectCR.isPending}
@@ -1344,10 +1516,13 @@ export default function CRDetailPage() {
         <Modal title="Submit Your Edits to DM" onClose={() => setShowPOResubmit(false)}>
           <div className="space-y-4">
             <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              You can make one round of edits. After the DM reviews them, you will only be able to approve or decline.
+              You can make one round of edits. After the DM reviews them, you will only be able to
+              approve or decline.
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Updated Description</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Updated Description
+              </label>
               <textarea
                 rows={5}
                 value={poResubDescription}
@@ -1357,7 +1532,9 @@ export default function CRDetailPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Your Notes to DM</label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Your Notes to DM
+              </label>
               <textarea
                 rows={3}
                 value={poResubClientNotes}
@@ -1367,7 +1544,9 @@ export default function CRDetailPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Reason for Edits <span className="text-[#EF323F]">*</span></label>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">
+                Reason for Edits <span className="text-[#EF323F]">*</span>
+              </label>
               <textarea
                 rows={2}
                 value={poResubReason}
@@ -1377,9 +1556,17 @@ export default function CRDetailPage() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setShowPOResubmit(false)}>Cancel</Button>
+              <Button variant="secondary" onClick={() => setShowPOResubmit(false)}>
+                Cancel
+              </Button>
               <Button
-                onClick={() => poResubmitWithEdits.mutate({ description: poResubDescription || undefined, clientNotes: poResubClientNotes || undefined, reason: poResubReason })}
+                onClick={() =>
+                  poResubmitWithEdits.mutate({
+                    description: poResubDescription || undefined,
+                    clientNotes: poResubClientNotes || undefined,
+                    reason: poResubReason,
+                  })
+                }
                 loading={poResubmitWithEdits.isPending}
                 disabled={!poResubReason.trim()}
               >

@@ -23,7 +23,12 @@ function ErrorModal({ message, onClose }: { message: string; onClose: () => void
           <h3 className="text-base font-semibold text-red-600">Error</h3>
           <button onClick={onClose} className="text-[#5D5B5B] hover:text-[#2D2D2D]">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -239,8 +244,6 @@ export default function NewCRPage() {
     }
   });
 
-
-
   const isLoading = createCR.isPending || submitCR.isPending;
 
   return (
@@ -265,7 +268,8 @@ export default function NewCRPage() {
         {/* No projects warning */}
         {noProjects && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            You have no active projects assigned to your account. Please contact your administrator to be assigned to a project before creating a change request.
+            You have no active projects assigned to your account. Please contact your administrator
+            to be assigned to a project before creating a change request.
           </div>
         )}
 
@@ -400,9 +404,7 @@ export default function NewCRPage() {
         </div>
       </form>
 
-      {submitError && (
-        <ErrorModal message={submitError} onClose={() => setSubmitError(null)} />
-      )}
+      {submitError && <ErrorModal message={submitError} onClose={() => setSubmitError(null)} />}
     </PageWrapper>
   );
 }

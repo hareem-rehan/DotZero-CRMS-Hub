@@ -68,15 +68,21 @@ function DmCreateCRForm() {
     setPrefilled(true);
   }, [existingCR, prefilled]);
 
-  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [field]: e.target.value }));
+  const set =
+    (field: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [field]: e.target.value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.projectId) return setError('Please select a project');
     if (!form.title.trim()) return setError('Title is required');
-    if (!form.estimatedHours || isNaN(Number(form.estimatedHours)) || Number(form.estimatedHours) <= 0)
+    if (
+      !form.estimatedHours ||
+      isNaN(Number(form.estimatedHours)) ||
+      Number(form.estimatedHours) <= 0
+    )
       return setError('Valid estimated hours are required');
 
     const payload = {
@@ -103,7 +109,8 @@ function DmCreateCRForm() {
 
   const isBusy = createCR.isPending || updateDraft.isPending;
 
-  const inputCls = 'w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm text-[#2D2D2D] focus:border-[#EF323F] focus:outline-none focus:ring-1 focus:ring-[#EF323F]';
+  const inputCls =
+    'w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm text-[#2D2D2D] focus:border-[#EF323F] focus:outline-none focus:ring-1 focus:ring-[#EF323F]';
   const labelCls = 'block text-xs font-semibold uppercase tracking-wider text-[#5D5B5B] mb-1';
   const sectionTitle = 'text-sm font-semibold text-[#2D2D2D] mb-4 pb-2 border-b border-[#E5E5E5]';
 
@@ -138,52 +145,95 @@ function DmCreateCRForm() {
               >
                 <option value="">Select project…</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.code})
+                  </option>
                 ))}
               </select>
               {isEditing && (
-                <p className="mt-1 text-xs text-[#5D5B5B]">Project cannot be changed when editing a draft.</p>
+                <p className="mt-1 text-xs text-[#5D5B5B]">
+                  Project cannot be changed when editing a draft.
+                </p>
               )}
             </div>
 
             <div>
               <label className={labelCls}>Title *</label>
-              <input type="text" value={form.title} onChange={set('title')} className={inputCls} placeholder="Brief title of the change request" maxLength={500} />
+              <input
+                type="text"
+                value={form.title}
+                onChange={set('title')}
+                className={inputCls}
+                placeholder="Brief title of the change request"
+                maxLength={500}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>Priority</label>
                 <select value={form.priority} onChange={set('priority')} className={inputCls}>
-                  {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className={labelCls}>Change Type</label>
                 <select value={form.changeType} onChange={set('changeType')} className={inputCls}>
-                  {CHANGE_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {CHANGE_TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div>
               <label className={labelCls}>Description</label>
-              <textarea value={form.description} onChange={set('description')} rows={4} className={inputCls} placeholder="Describe the change in detail…" />
+              <textarea
+                value={form.description}
+                onChange={set('description')}
+                rows={4}
+                className={inputCls}
+                placeholder="Describe the change in detail…"
+              />
             </div>
 
             <div>
               <label className={labelCls}>Business Justification</label>
-              <textarea value={form.businessJustification} onChange={set('businessJustification')} rows={3} className={inputCls} placeholder="Why is this change needed?" />
+              <textarea
+                value={form.businessJustification}
+                onChange={set('businessJustification')}
+                rows={3}
+                className={inputCls}
+                placeholder="Why is this change needed?"
+              />
             </div>
 
             <div>
               <label className={labelCls}>Requesting Party</label>
-              <input type="text" value={form.requestingParty} onChange={set('requestingParty')} className={inputCls} placeholder="Auto-filled from project" />
+              <input
+                type="text"
+                value={form.requestingParty}
+                onChange={set('requestingParty')}
+                className={inputCls}
+                placeholder="Auto-filled from project"
+              />
             </div>
 
             <div>
               <label className={labelCls}>DM Notes</label>
-              <textarea value={form.dmNotes} onChange={set('dmNotes')} rows={2} className={inputCls} placeholder="Internal notes for the DM (not visible to client)…" />
+              <textarea
+                value={form.dmNotes}
+                onChange={set('dmNotes')}
+                rows={2}
+                className={inputCls}
+                placeholder="Internal notes for the DM (not visible to client)…"
+              />
             </div>
           </div>
         </div>
@@ -208,28 +258,56 @@ function DmCreateCRForm() {
 
             <div>
               <label className={labelCls}>Timeline Impact</label>
-              <input type="text" value={form.timelineImpact} onChange={set('timelineImpact')} className={inputCls} placeholder="e.g. +3 days to Milestone 3" />
+              <input
+                type="text"
+                value={form.timelineImpact}
+                onChange={set('timelineImpact')}
+                className={inputCls}
+                placeholder="e.g. +3 days to Milestone 3"
+              />
             </div>
 
             <div>
               <label className={labelCls}>Affected Deliverables</label>
-              <textarea value={form.affectedDeliverables} onChange={set('affectedDeliverables')} rows={2} className={inputCls} placeholder="Which deliverables are impacted?" />
+              <textarea
+                value={form.affectedDeliverables}
+                onChange={set('affectedDeliverables')}
+                rows={2}
+                className={inputCls}
+                placeholder="Which deliverables are impacted?"
+              />
             </div>
 
             <div>
               <label className={labelCls}>Revised Milestones</label>
-              <textarea value={form.revisedMilestones} onChange={set('revisedMilestones')} rows={2} className={inputCls} placeholder="Any milestone changes?" />
+              <textarea
+                value={form.revisedMilestones}
+                onChange={set('revisedMilestones')}
+                rows={2}
+                className={inputCls}
+                placeholder="Any milestone changes?"
+              />
             </div>
 
             <div>
               <label className={labelCls}>Recommendation</label>
-              <textarea value={form.recommendation} onChange={set('recommendation')} rows={2} className={inputCls} placeholder="Your overall recommendation…" />
+              <textarea
+                value={form.recommendation}
+                onChange={set('recommendation')}
+                rows={2}
+                className={inputCls}
+                placeholder="Your overall recommendation…"
+              />
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-3 pb-6">
-          <button type="button" onClick={() => router.back()} className="rounded-lg border border-[#D3D3D3] px-5 py-2 text-sm font-medium text-[#5D5B5B] hover:bg-gray-50">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-lg border border-[#D3D3D3] px-5 py-2 text-sm font-medium text-[#5D5B5B] hover:bg-gray-50"
+          >
             Cancel
           </button>
           <button
@@ -247,7 +325,15 @@ function DmCreateCRForm() {
 
 export default function DmCreateCRPage() {
   return (
-    <Suspense fallback={<PageWrapper title="Loading…"><div className="flex h-40 items-center justify-center text-sm text-[#5D5B5B]">Loading…</div></PageWrapper>}>
+    <Suspense
+      fallback={
+        <PageWrapper title="Loading…">
+          <div className="flex h-40 items-center justify-center text-sm text-[#5D5B5B]">
+            Loading…
+          </div>
+        </PageWrapper>
+      }
+    >
       <DmCreateCRForm />
     </Suspense>
   );

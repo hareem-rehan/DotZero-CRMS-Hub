@@ -156,7 +156,11 @@ export const authService = {
 
     if (!tokenRecord) throw new AppError(400, 'Invalid or expired reset token');
 
-    const metadata = tokenRecord.metadata as { tokenHash: string; expiresAt: string; purpose?: string };
+    const metadata = tokenRecord.metadata as {
+      tokenHash: string;
+      expiresAt: string;
+      purpose?: string;
+    };
     if (new Date(metadata.expiresAt) < new Date()) {
       throw new AppError(400, 'Reset token has expired. Please request a new one.');
     }
