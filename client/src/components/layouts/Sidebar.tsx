@@ -119,6 +119,11 @@ const icons = {
       />
     </svg>
   ),
+  createCr: (
+    <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  ),
 };
 
 const NAV_BY_ROLE: Record<string, NavItem[]> = {
@@ -138,6 +143,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   DELIVERY_MANAGER: [
     { label: 'Pending Queue', href: '/dm/pending', icon: icons.queue },
+    { label: 'Create CR for Client', href: '/dm/create-cr', icon: icons.createCr },
     { label: 'All CRs', href: '/dm/all-crs', icon: icons.crs },
     { label: 'Profile', href: '/profile', icon: icons.profile },
   ],

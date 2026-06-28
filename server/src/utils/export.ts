@@ -42,7 +42,7 @@ export const generateCSV = (crs: ExportCR[]): string => {
   const headers = [
     'CR Number',
     'Project',
-    'Client',
+    'PO',
     'Status',
     'Priority',
     'Change Type',
@@ -121,7 +121,7 @@ export const generateListPDF = (crs: ExportCR[], filters: ExportFilters): Promis
     if (filters.dateFrom) filterParts.push(`From: ${filters.dateFrom}`);
     if (filters.dateTo) filterParts.push(`To: ${filters.dateTo}`);
     if (filters.status) filterParts.push(`Status: ${filters.status}`);
-    if (filters.clientName) filterParts.push(`Client: ${filters.clientName}`);
+    if (filters.clientName) filterParts.push(`PO: ${filters.clientName}`);
     doc.text(filterParts.join('  ·  '), 50, 90);
 
     doc.moveDown(1.5);

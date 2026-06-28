@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -9,6 +9,7 @@ interface LoginPayload {
   email: string;
   password: string;
   rememberMe?: boolean;
+  role?: string;
 }
 
 interface RegisterPayload {
@@ -83,16 +84,36 @@ export const useForgotPassword = () => {
   });
 };
 
+export const useResetTokenInfo = (token: string) => {
+  return useQuery({
+    queryKey: ['reset-token-info', token],
+    queryFn: async () => {
+      const res = await apiClient.get(`/auth/reset-password/info?token=${token}`);
+      return res.data.data as { purpose: 'setup' | 'reset' };
+    },
+    enabled: !!token,
+    retry: false,
+    staleTime: Infinity,
+  });
+};
+
 export const useResetPassword = () => {
   const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   return useMutation({
     mutationFn: async (payload: ResetPasswordPayload) => {
       const res = await apiClient.post('/auth/reset-password', payload);
-      return res.data.data as { message: string };
+      return res.data.data as {
+        message: string;
+        token: string;
+        user: { id: string; name: string; email: string; role: string };
+      };
     },
-    onSuccess: () => {
-      router.push('/login');
+    onSuccess: (data) => {
+      setAuth(data.user, data.token);
+      const roleHome = ROLE_REDIRECT[data.user.role] ?? '/';
+      router.push(roleHome);
     },
   });
 };

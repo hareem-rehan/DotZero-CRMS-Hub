@@ -120,7 +120,7 @@ export const crApprovedEmail = (
   subject: `CR Approved — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Approved</h2>
-    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been approved by the client.</p>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been approved by the PO.</p>
     ${crMeta(crNumber, projectName)}
     ${approvalNotes ? `<p style="color:#5D5B5B;font-size:14px"><em>Notes: ${approvalNotes}</em></p>` : ''}
     <p style="color:#5D5B5B;font-size:14px">No further action is required from you at this time.</p>
@@ -136,7 +136,7 @@ export const crDeclinedEmail = (
   subject: `CR Declined — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Declined</h2>
-    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been declined by the client.</p>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been declined by the PO.</p>
     ${crMeta(crNumber, projectName)}
     <div style="background:#FFF5F5;border-left:3px solid #EF323F;padding:12px 16px;margin:16px 0;font-size:13px">
       <strong style="color:#EF323F">Reason:</strong><br>
@@ -155,10 +155,26 @@ export const crResubmittedEmail = (
   subject: `CR Resubmitted (v${version}) — ${crNumber}`,
   html: layout(`
     <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Resubmitted</h2>
-    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the client has revised and resubmitted the following change request.</p>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the PO has revised and resubmitted the following change request.</p>
     ${crMeta(crNumber, projectName)}
     <p style="color:#5D5B5B;font-size:14px">This is now <strong>version ${version}</strong>. Please review the changes and provide a new estimation.</p>
     ${btn('Review Resubmission', `${BASE_URL}/dm/pending/${crId}`)}
+  `),
+});
+
+export const crCancelledEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  reason?: string,
+) => ({
+  subject: `CR Cancelled — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Cancelled</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the following change request has been cancelled by the PO. No further action is required.</p>
+    ${crMeta(crNumber, projectName)}
+    ${reason ? `<div style="background:#FFF5F5;border-left:3px solid #EF323F;padding:12px 16px;margin:16px 0;font-size:13px"><strong style="color:#EF323F">Reason:</strong><br><span style="color:#2D2D2D">${reason}</span></div>` : ''}
+    <p style="color:#5D5B5B;font-size:14px">This CR has been closed and will require no further estimation or review.</p>
   `),
 });
 
@@ -220,6 +236,78 @@ export const projectAssignedEmail = (poName: string, projectName: string, newCrU
     <p style="color:#5D5B5B;font-size:14px">You can now submit change requests for this project directly from your portal.</p>
     ${btn('Create a Change Request', newCrUrl)}
     <p style="font-size:12px;color:#5D5B5B;text-align:center">If you have any questions, please reach out to your Delivery Manager.</p>
+  `),
+});
+
+// ─── DM-initiated CR emails ───────────────────────────────────────────────────
+
+export const dmCRSentToClientEmail = (
+  poName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+  dmName: string,
+) => ({
+  subject: `CR Created on Your Behalf — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Ready for Your Review</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${poName}, your Delivery Manager <strong>${dmName}</strong> has created a change request on your behalf and it is ready for your review.</p>
+    ${crMeta(crNumber, projectName)}
+    <p style="color:#5D5B5B;font-size:14px">Please review the details and either <strong>confirm</strong> to proceed or <strong>reject</strong> it back to the DM.</p>
+    ${btn('Review Change Request', `${BASE_URL}/client/my-crs/${crId}`)}
+  `),
+});
+
+export const clientRejectedCREmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+  reason: string,
+) => ({
+  subject: `CR Rejected by Client — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Client Rejected the Change Request</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the client has rejected the change request you submitted on their behalf.</p>
+    ${crMeta(crNumber, projectName)}
+    <div style="background:#FFF5F5;border-left:3px solid #EF323F;padding:12px 16px;margin:16px 0;font-size:13px">
+      <strong style="color:#EF323F">Rejection Reason:</strong><br>
+      <span style="color:#2D2D2D">${reason}</span>
+    </div>
+    <p style="color:#5D5B5B;font-size:14px">The CR has been returned to draft. Please revise and re-send to the client.</p>
+    ${btn('Edit & Re-send', `${BASE_URL}/dm/draft/${crId}`)}
+  `),
+});
+
+export const poResubmittedEditsEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+) => ({
+  subject: `Client Submitted Edits — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Client Has Submitted Edits</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the client has reviewed your change request and submitted some edits for your review.</p>
+    ${crMeta(crNumber, projectName)}
+    <p style="color:#5D5B5B;font-size:14px">Please review their changes, add your comments, and re-submit for final client approval.</p>
+    ${btn('Review Client Edits', `${BASE_URL}/dm/client-revision/${crId}`)}
+  `),
+});
+
+export const dmReviewedEditsEmail = (
+  poName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+) => ({
+  subject: `DM Reviewed Your Edits — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Ready for Final Approval</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${poName}, the DM has reviewed your edits and the change request is now ready for your final approval.</p>
+    ${crMeta(crNumber, projectName)}
+    <p style="color:#5D5B5B;font-size:14px">Please review and take your final action: <strong>Approve</strong> or <strong>Decline</strong>.</p>
+    ${btn('Approve or Decline', `${BASE_URL}/client/my-crs/${crId}`)}
   `),
 });
 

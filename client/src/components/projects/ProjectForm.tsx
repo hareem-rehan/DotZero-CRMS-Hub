@@ -273,7 +273,7 @@ export function ProjectForm({
       {/* Client team members */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-[#2D2D2D]">
-          Client Team Members
+          PO Team Members
           <span className="ml-1 font-normal text-[#5D5B5B]">
             — receive CR notifications via email
           </span>
@@ -292,7 +292,7 @@ export function ProjectForm({
                 addEmail();
               }
             }}
-            placeholder="client@company.com"
+            placeholder="po@company.com"
             className="flex-1 rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
           />
           <Button type="button" variant="secondary" onClick={addEmail}>

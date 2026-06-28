@@ -91,7 +91,7 @@ export default function FinanceCrListingPage() {
     },
     {
       key: 'client',
-      header: 'Client',
+      header: 'PO',
       render: (row) => (
         <span className="text-sm text-[#5D5B5B]">{row.project.clientName ?? '—'}</span>
       ),
@@ -193,7 +193,7 @@ export default function FinanceCrListingPage() {
         </select>
         <input
           type="text"
-          placeholder="Client name…"
+          placeholder="PO name…"
           value={clientName}
           onChange={(e) => {
             setClientName(e.target.value);

@@ -10,7 +10,7 @@ async function main() {
 
   const [admin, dm, finance, po] = await Promise.all([
     prisma.user.upsert({
-      where: { email: 'admin@dotzero.com' },
+      where: { email_role: { email: 'admin@dotzero.com', role: Role.SUPER_ADMIN } },
       update: { name: 'Alex Carter' },
       create: {
         name: 'Alex Carter',
@@ -21,7 +21,7 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'dm@dotzero.com' },
+      where: { email_role: { email: 'dm@dotzero.com', role: Role.DELIVERY_MANAGER } },
       update: { name: 'Sarah Mitchell' },
       create: {
         name: 'Sarah Mitchell',
@@ -32,7 +32,7 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'finance@dotzero.com' },
+      where: { email_role: { email: 'finance@dotzero.com', role: Role.FINANCE } },
       update: { name: 'James Liu' },
       create: {
         name: 'James Liu',
@@ -43,7 +43,7 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'po@dotzero.com' },
+      where: { email_role: { email: 'po@dotzero.com', role: Role.PRODUCT_OWNER } },
       update: { name: 'Priya Sharma' },
       create: {
         name: 'Priya Sharma',

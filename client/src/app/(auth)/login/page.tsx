@@ -27,17 +27,23 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') ?? undefined;
+  const notice = searchParams.get('notice');
   const { user, token, isHydrated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: login, isPending, error } = useLogin(redirectTo);
 
-  // Already logged in — send them to their role home (ignore redirect for security)
   useEffect(() => {
     if (!isHydrated) return;
     if (token && user) {
-      router.replace(ROLE_HOME[user.role] ?? '/');
+      const roleHome = ROLE_HOME[user.role] ?? '/';
+      const rolePrefix = roleHome.split('/')[1];
+      if (!redirectTo) {
+        router.replace(roleHome);
+      } else if (redirectTo.startsWith(`/${rolePrefix}`)) {
+        router.replace(redirectTo);
+      }
     }
-  }, [isHydrated, token, user, router]);
+  }, [isHydrated, token, user, router, redirectTo]);
 
   const {
     register,
@@ -59,6 +65,13 @@ function LoginForm() {
     <>
       <h1 className="text-xl font-bold text-[#2D2D2D] mb-1">Sign in</h1>
       <p className="text-sm text-[#5D5B5B] mb-6">Welcome back to DotZero CR Portal</p>
+
+      {notice === 'setup_required' && (
+        <div className="mb-4 rounded-md bg-blue-50 border border-blue-300 px-4 py-3 text-sm text-blue-800">
+          To access the DM Portal you need to first set up your password. Please check your welcome
+          email for the setup link.
+        </div>
+      )}
 
       {errorMessage && (
         <div className="mb-4 rounded-md bg-red-50 border border-[#EF323F] px-4 py-3 text-sm text-[#EF323F]">
@@ -85,7 +98,7 @@ function LoginForm() {
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
+              autoComplete="new-password"
               placeholder="••••••••"
               className={`w-full rounded-md border px-3 py-2.5 pr-10 text-sm text-[#2D2D2D] placeholder-[#5D5B5B] outline-none transition-colors
                 ${errors.password ? 'border-[#EF323F] focus:ring-1 focus:ring-[#EF323F]' : 'border-[#D3D3D3] focus:border-[#2D2D2D] focus:ring-1 focus:ring-[#2D2D2D]'}`}

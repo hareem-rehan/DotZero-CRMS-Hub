@@ -252,7 +252,7 @@ export default function UsersListPage() {
       header: 'Password',
       render: (row) =>
         row.passwordSetAt ? (
-          <Badge label="Set" variant="green" />
+          <Badge label="Active" variant="green" />
         ) : (
           <Badge label="Pending" variant="yellow" />
         ),

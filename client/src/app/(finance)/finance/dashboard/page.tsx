@@ -156,7 +156,7 @@ export default function FinanceDashboardPage() {
           onChange={(e) => setClientName(e.target.value)}
           className="rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F] bg-white"
         >
-          <option value="">All Clients</option>
+          <option value="">All POs</option>
           {clientOptions.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -243,21 +243,16 @@ export default function FinanceDashboardPage() {
               <table className="w-full text-sm">
                 <thead className="bg-[#F7F7F7]">
                   <tr>
-                    {[
-                      'Project',
-                      'Client',
-                      'CRs',
-                      'Hours',
-                      'Original Cost',
-                      `Cost (${currency})`,
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide"
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    {['Project', 'PO', 'CRs', 'Hours', 'Original Cost', `Cost (${currency})`].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-left text-xs font-semibold text-[#5D5B5B] uppercase tracking-wide"
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F0F0F0]">

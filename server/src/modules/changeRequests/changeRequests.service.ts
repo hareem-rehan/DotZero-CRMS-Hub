@@ -1,3 +1,4 @@
+import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '../../config/db';
 import { AppError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../utils/auditLog';
@@ -8,11 +9,26 @@ import {
   crApprovedEmail,
   crDeclinedEmail,
   crResubmittedEmail,
+  crCancelledEmail,
   statusChangedEmail,
+  dmCRSentToClientEmail,
+  clientRejectedCREmail,
+  poResubmittedEditsEmail,
+  dmReviewedEditsEmail,
 } from '../../utils/emailTemplates';
 import { ALLOWED_TRANSITIONS } from './changeRequests.validation';
 
-import type { CreateCRInput, UpdateCRInput } from './changeRequests.validation';
+import type {
+  CreateCRInput,
+  UpdateCRInput,
+  CreateDMInitiatedCRInput,
+  UpdateDMDraftInput,
+  ClientConfirmInput,
+  ClientReviewEditInput,
+  ClientRejectInput,
+  POResubmitWithEditsInput,
+  DMReviewResubmitInput,
+} from './changeRequests.validation';
 
 // ─── CR number generation ─────────────────────────────────────────────────────
 // Atomically increment project.crSequence and return the new crNumber
@@ -77,6 +93,8 @@ export const listCRs = async (
     search?: string;
     page?: number;
     pageSize?: number;
+    assignedToMe?: boolean;
+    initiatedByDm?: boolean;
   },
 ) => {
   const page = Math.max(1, query.page ?? 1);
@@ -91,6 +109,8 @@ export const listCRs = async (
     const projectIds = await getPOScope(actorId);
     where.projectId = { in: projectIds };
     where.submittedById = actorId; // PO only sees their own CRs
+    // Hide DM-initiated DRAFTs — PO only sees them once DM sends them (PENDING_CLIENT_REVIEW+)
+    where.NOT = { AND: [{ initiatedByDm: true }, { status: 'DRAFT' }] };
   } else if (actorRole === 'DELIVERY_MANAGER') {
     const [assignments, assignedProjects] = await Promise.all([
       prisma.projectUser.findMany({
@@ -110,12 +130,23 @@ export const listCRs = async (
   } else if (actorRole === 'FINANCE') {
     where.status = { in: ['APPROVED', 'IN_PROGRESS', 'COMPLETED'] };
   }
-  // SUPER_ADMIN: no restriction
+  // SUPER_ADMIN: no restriction, but support "My Project CRs" view
+  if (actorRole === 'SUPER_ADMIN' && query.assignedToMe) {
+    const [assignments, assignedProjects] = await Promise.all([
+      prisma.projectUser.findMany({ where: { userId: actorId }, select: { projectId: true } }),
+      prisma.project.findMany({ where: { assignedDmId: actorId }, select: { id: true } }),
+    ]);
+    const myProjectIds = [
+      ...new Set([...assignments.map((a) => a.projectId), ...assignedProjects.map((p) => p.id)]),
+    ];
+    where.projectId = { in: myProjectIds };
+  }
 
   if (query.projectId) where.projectId = query.projectId;
   if (query.status) where.status = query.status;
   if (query.changeType) where.changeType = query.changeType;
   if (query.priority) where.priority = query.priority;
+  if (query.initiatedByDm !== undefined) where.initiatedByDm = query.initiatedByDm;
   if (query.search) {
     where.OR = [
       { crNumber: { contains: query.search, mode: 'insensitive' } },
@@ -132,6 +163,7 @@ export const listCRs = async (
       include: {
         project: { select: { id: true, name: true, code: true } },
         submittedBy: { select: { id: true, name: true } },
+        createdByDm: { select: { id: true, name: true } },
         _count: { select: { attachments: true } },
       },
     }),
@@ -159,6 +191,7 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
         },
       },
       submittedBy: { select: { id: true, name: true, email: true } },
+      createdByDm: { select: { id: true, name: true } },
       attachments: true,
       impactAnalysis: { include: { dm: { select: { id: true, name: true } } } },
       approval: true,
@@ -181,6 +214,10 @@ export const getCRById = async (id: string, actorId: string, actorRole: string) 
   // Scope checks
   if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId) {
     throw new AppError(403, 'Access denied');
+  }
+  // PO cannot view DM-initiated CR until DM sends it
+  if (actorRole === 'PRODUCT_OWNER' && cr.initiatedByDm && cr.status === 'DRAFT') {
+    throw new AppError(403, 'This CR is not ready for your review yet');
   }
 
   // Auto-transition SUBMITTED → UNDER_REVIEW when DM first opens the CR
@@ -538,16 +575,45 @@ export const resubmitCR = async (
     include: {
       project: { select: { name: true, assignedDmId: true } },
       submittedBy: { select: { id: true } },
-      impactAnalysis: true,
+      impactAnalysis: { include: { dm: { select: { id: true, name: true } } } },
       attachments: true,
+      statusHistory: { orderBy: { changedAt: 'desc' }, take: 10 },
     },
   });
   if (!cr) throw new AppError(404, 'Change request not found');
+  if (cr.initiatedByDm) throw new AppError(400, 'DM-initiated CRs cannot be resubmitted');
   if (actorRole === 'PRODUCT_OWNER') {
     const projectIds = await getPOScope(actorId);
     if (!projectIds.includes(cr.projectId)) throw new AppError(403, 'Access denied');
   }
   assertTransition(cr.status, 'RESUBMITTED');
+
+  // ── Resubmission limits (PO only) ──────────────────────────────────────────
+  // version 1 = original, version 2 = 1st resubmission, version 3 = 2nd resubmission
+  // Max 2 resubmissions (version must stay <= 3)
+  const MAX_RESUBMISSIONS = 2;
+  const resubmissionCount = cr.version - 1; // how many times already resubmitted
+  if (resubmissionCount >= MAX_RESUBMISSIONS) {
+    throw new AppError(
+      400,
+      `This CR has already been resubmitted ${MAX_RESUBMISSIONS} time(s). No further resubmissions are allowed.`,
+    );
+  }
+
+  // 72-hour window: measured from when the CR last moved into ESTIMATED, DECLINED, or DEFERRED
+  const triggerEntry = cr.statusHistory.find((h) =>
+    ['ESTIMATED', 'DECLINED', 'DEFERRED'].includes(h.toStatus as string),
+  );
+  if (triggerEntry) {
+    const hoursSinceTrigger =
+      (Date.now() - new Date(triggerEntry.changedAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceTrigger > 72) {
+      throw new AppError(
+        400,
+        `The 72-hour resubmission window has expired. This CR can no longer be resubmitted.`,
+      );
+    }
+  }
 
   const newVersion = cr.version + 1;
 
@@ -629,7 +695,10 @@ export const resubmitCR = async (
 // ─── Cancel ───────────────────────────────────────────────────────────────────
 
 export const cancelCR = async (id: string, actorId: string, actorRole: string, reason?: string) => {
-  const cr = await prisma.changeRequest.findUnique({ where: { id } });
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true, assignedDmId: true } } },
+  });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (actorRole === 'PRODUCT_OWNER' && cr.submittedById !== actorId)
     throw new AppError(403, 'Access denied');
@@ -656,6 +725,19 @@ export const cancelCR = async (id: string, actorId: string, actorRole: string, r
     metadata: { crNumber: cr.crNumber },
   });
 
+  // Notify DM if the CR was in a state where DM action was pending or in progress
+  const dmActionStates = ['SUBMITTED', 'UNDER_REVIEW', 'RESUBMITTED'];
+  if (dmActionStates.includes(cr.status) && cr.project.assignedDmId) {
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.project.assignedDmId },
+      select: { email: true, name: true },
+    });
+    if (dm) {
+      const tpl = crCancelledEmail(dm.name, cr.crNumber, cr.project.name, reason);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
   return prisma.changeRequest.findUnique({ where: { id } });
 };
 
@@ -672,6 +754,490 @@ export const getCRVersions = async (id: string, actorId: string, actorRole: stri
     orderBy: { versionNumber: 'asc' },
     include: { createdBy: { select: { id: true, name: true } } },
   });
+};
+
+// ─── DM-initiated: create ─────────────────────────────────────────────────────
+
+export const createDMInitiatedCR = async (input: CreateDMInitiatedCRInput, actorId: string) => {
+  const project = await prisma.project.findUnique({
+    where: { id: input.projectId },
+    select: { id: true, status: true, sowReference: true, clientName: true, assignedDmId: true },
+  });
+  if (!project) throw new AppError(404, 'Project not found');
+  if (project.status === 'ARCHIVED')
+    throw new AppError(400, 'Cannot create CR for an archived project');
+
+  // Verify actor is DM for this project (assigned or member)
+  const [isDmAssigned, isMember] = await Promise.all([
+    Promise.resolve(project.assignedDmId === actorId),
+    prisma.projectUser.findUnique({
+      where: { projectId_userId: { projectId: input.projectId, userId: actorId } },
+    }),
+  ]);
+  if (!isDmAssigned && !isMember) throw new AppError(403, 'You are not assigned to this project');
+
+  // Resolve the PO for this project (one PO per project)
+  const poAssignment = await prisma.projectUser.findFirst({
+    where: { projectId: input.projectId, user: { role: 'PRODUCT_OWNER' } },
+    include: { user: { select: { id: true, name: true, email: true, notifyOnCrSubmitted: true } } },
+  });
+  if (!poAssignment) throw new AppError(400, 'No Product Owner is assigned to this project');
+
+  const po = poAssignment.user;
+  const { crNumber } = await generateCRNumber(input.projectId);
+
+  const cr = await prisma.changeRequest.create({
+    data: {
+      crNumber,
+      projectId: input.projectId,
+      submittedById: po.id,
+      initiatedByDm: true,
+      createdByDmId: actorId,
+      title: input.title,
+      description: input.description ?? '',
+      businessJustification: input.businessJustification ?? '',
+      priority: input.priority ?? 'MEDIUM',
+      changeType: input.changeType ?? 'SCOPE',
+      requestingParty: input.requestingParty ?? project.clientName,
+      sowRef: input.sowRef ?? project.sowReference ?? null,
+      dmNotes: input.dmNotes ?? null,
+      status: 'DRAFT',
+    },
+  });
+
+  // Save estimation upfront (as draft — finalized when PO confirms)
+  await prisma.impactAnalysis.create({
+    data: {
+      changeRequestId: cr.id,
+      dmId: actorId,
+      estimatedHours: new Decimal(input.estimatedHours),
+      timelineImpact: input.timelineImpact ?? '',
+      affectedDeliverables: input.affectedDeliverables ?? '',
+      revisedMilestones: input.revisedMilestones ?? null,
+      resourcesRequired: input.resourcesRequired ?? null,
+      recommendation: input.recommendation ?? '',
+      dmSignature: input.dmSignature ?? null,
+      isDraft: true,
+    },
+  });
+
+  await createAuditLog({
+    event: 'CR_CREATED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: cr.id,
+    metadata: { crNumber, projectId: input.projectId, initiatedByDm: true },
+  });
+
+  return prisma.changeRequest.findUnique({
+    where: { id: cr.id },
+    include: { impactAnalysis: true, project: { select: { id: true, name: true, code: true } } },
+  });
+};
+
+// ─── DM-initiated: update draft ──────────────────────────────────────────────
+
+export const updateDMDraft = async (id: string, input: UpdateDMDraftInput, actorId: string) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { impactAnalysis: true },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.createdByDmId !== actorId) throw new AppError(403, 'Access denied');
+  if (!['DRAFT', 'CLIENT_REVISION'].includes(cr.status))
+    throw new AppError(400, 'Only DRAFT or returned CRs can be edited');
+
+  await prisma.changeRequest.update({
+    where: { id },
+    data: {
+      ...(input.title !== undefined && { title: input.title }),
+      ...(input.description !== undefined && { description: input.description }),
+      ...(input.businessJustification !== undefined && {
+        businessJustification: input.businessJustification,
+      }),
+      ...(input.priority !== undefined && { priority: input.priority }),
+      ...(input.changeType !== undefined && { changeType: input.changeType }),
+      ...(input.requestingParty !== undefined && { requestingParty: input.requestingParty }),
+      ...(input.sowRef !== undefined && { sowRef: input.sowRef }),
+      ...(input.dmNotes !== undefined && { dmNotes: input.dmNotes }),
+    },
+  });
+
+  // Update estimation if provided
+  const hasEstimationUpdate =
+    input.estimatedHours !== undefined ||
+    input.timelineImpact !== undefined ||
+    input.affectedDeliverables !== undefined ||
+    input.revisedMilestones !== undefined ||
+    input.resourcesRequired !== undefined ||
+    input.recommendation !== undefined ||
+    input.dmSignature !== undefined;
+
+  if (hasEstimationUpdate && cr.impactAnalysis) {
+    await prisma.impactAnalysis.update({
+      where: { changeRequestId: id },
+      data: {
+        ...(input.estimatedHours !== undefined && {
+          estimatedHours: new Decimal(input.estimatedHours),
+        }),
+        ...(input.timelineImpact !== undefined && { timelineImpact: input.timelineImpact }),
+        ...(input.affectedDeliverables !== undefined && {
+          affectedDeliverables: input.affectedDeliverables,
+        }),
+        ...(input.revisedMilestones !== undefined && {
+          revisedMilestones: input.revisedMilestones,
+        }),
+        ...(input.resourcesRequired !== undefined && {
+          resourcesRequired: input.resourcesRequired,
+        }),
+        ...(input.recommendation !== undefined && { recommendation: input.recommendation }),
+        ...(input.dmSignature !== undefined && { dmSignature: input.dmSignature }),
+      },
+    });
+  }
+
+  return prisma.changeRequest.findUnique({
+    where: { id },
+    include: { impactAnalysis: true, project: { select: { id: true, name: true, code: true } } },
+  });
+};
+
+// ─── DM-initiated: send to client ────────────────────────────────────────────
+
+export const sendToClient = async (id: string, actorId: string) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      impactAnalysis: true,
+      project: { select: { name: true } },
+      submittedBy: { select: { id: true, name: true, email: true, notifyOnCrSubmitted: true } },
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.createdByDmId !== actorId)
+    throw new AppError(403, 'Only the DM who created this CR can send it');
+  assertTransition(cr.status, 'PENDING_CLIENT_REVIEW');
+
+  if (!cr.title?.trim()) throw new AppError(400, 'Title is required before sending to client');
+  if (!cr.impactAnalysis)
+    throw new AppError(400, 'Estimation is required before sending to client');
+  if (!cr.impactAnalysis.estimatedHours) throw new AppError(400, 'Estimated hours are required');
+
+  const dm = await prisma.user.findUnique({ where: { id: actorId }, select: { name: true } });
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({
+      where: { id },
+      data: { status: 'PENDING_CLIENT_REVIEW', dateOfRequest: new Date() },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status as never,
+        toStatus: 'PENDING_CLIENT_REVIEW',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_SENT_TO_CLIENT',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
+
+  if (cr.submittedBy?.email) {
+    const tpl = dmCRSentToClientEmail(
+      cr.submittedBy.name,
+      cr.crNumber,
+      cr.project.name,
+      id,
+      dm?.name ?? 'Your DM',
+    );
+    await sendEmail(cr.submittedBy.email, tpl.subject, tpl.html).catch(() => {});
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── DM-initiated: client confirm ────────────────────────────────────────────
+
+export const clientConfirmCR = async (id: string, actorId: string, input: ClientConfirmInput) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      impactAnalysis: true,
+      project: { select: { name: true } },
+      submittedBy: { select: { id: true } },
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'ESTIMATED');
+
+  if (!cr.impactAnalysis) throw new AppError(500, 'Estimation data is missing');
+
+  const updateData: Record<string, unknown> = { status: 'ESTIMATED' };
+  if (input.clientNotes !== undefined) updateData.clientNotes = input.clientNotes;
+  if (input.description !== undefined) updateData.description = input.description;
+  if (input.businessJustification !== undefined)
+    updateData.businessJustification = input.businessJustification;
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: updateData }),
+    prisma.impactAnalysis.update({
+      where: { changeRequestId: id },
+      data: { isDraft: false, submittedAt: new Date() },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: 'PENDING_CLIENT_REVIEW',
+        toStatus: 'ESTIMATED',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_ESTIMATED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber, confirmedByClient: true },
+  });
+
+  return prisma.changeRequest.findUnique({ where: { id }, include: { impactAnalysis: true } });
+};
+
+// ─── DM-initiated: client edits description / business justification ─────────
+
+export const clientReviewEditCR = async (
+  id: string,
+  actorId: string,
+  input: ClientReviewEditInput,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    select: { status: true, initiatedByDm: true, submittedById: true },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (cr.status !== 'PENDING_CLIENT_REVIEW')
+    throw new AppError(400, 'CR is not in PENDING_CLIENT_REVIEW status');
+
+  const updateData: Record<string, unknown> = {};
+  if (input.description !== undefined) updateData.description = input.description;
+  if (input.businessJustification !== undefined)
+    updateData.businessJustification = input.businessJustification;
+
+  return prisma.changeRequest.update({ where: { id }, data: updateData });
+};
+
+// ─── DM-initiated: client reject ─────────────────────────────────────────────
+
+export const clientRejectCR = async (id: string, actorId: string, input: ClientRejectInput) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      project: { select: { name: true } },
+      submittedBy: { select: { id: true } },
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  assertTransition(cr.status, 'CLIENT_REVISION');
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({
+      where: { id },
+      data: { status: 'CLIENT_REVISION', clientNotes: input.reason },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: 'PENDING_CLIENT_REVIEW',
+        toStatus: 'CLIENT_REVISION',
+        changedById: actorId,
+        reason: input.reason,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_CLIENT_REJECTED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
+
+  // Notify DM
+  if (cr.createdByDmId) {
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.createdByDmId },
+      select: { email: true, name: true },
+    });
+    if (dm) {
+      const tpl = clientRejectedCREmail(dm.name, cr.crNumber, cr.project.name, id, input.reason);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── DM-initiated: PO re-submit with edits ───────────────────────────────────
+
+export const poResubmitWithEdits = async (
+  id: string,
+  actorId: string,
+  input: POResubmitWithEditsInput,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true } }, submittedBy: { select: { id: true } } },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (cr.clientRevisionUsed)
+    throw new AppError(400, 'You have already used your one revision on this CR');
+  assertTransition(cr.status, 'CLIENT_REVISION');
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({
+      where: { id },
+      data: {
+        status: 'CLIENT_REVISION',
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.businessJustification !== undefined && {
+          businessJustification: input.businessJustification,
+        }),
+        ...(input.clientNotes !== undefined && { clientNotes: input.clientNotes }),
+      },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: 'ESTIMATED',
+        toStatus: 'CLIENT_REVISION',
+        changedById: actorId,
+        reason: input.reason,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_PO_RESUBMIT_WITH_EDITS',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
+
+  // Notify DM
+  if (cr.createdByDmId) {
+    const dm = await prisma.user.findUnique({
+      where: { id: cr.createdByDmId },
+      select: { email: true, name: true },
+    });
+    if (dm) {
+      const tpl = poResubmittedEditsEmail(dm.name, cr.crNumber, cr.project.name, id);
+      await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
+    }
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id } });
+};
+
+// ─── DM-initiated: DM review & re-submit ─────────────────────────────────────
+
+export const dmReviewResubmit = async (
+  id: string,
+  actorId: string,
+  input: DMReviewResubmitInput,
+) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: {
+      impactAnalysis: true,
+      project: { select: { name: true } },
+      submittedBy: { select: { id: true, name: true, email: true, notifyOnCrReturned: true } },
+    },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.createdByDmId !== actorId)
+    throw new AppError(403, 'Only the DM who created this CR can review it');
+  assertTransition(cr.status, 'ESTIMATED');
+
+  if (!cr.impactAnalysis) throw new AppError(500, 'Estimation data is missing');
+
+  // Update CR + mark revision used + update estimation
+  await prisma.$transaction([
+    prisma.changeRequest.update({
+      where: { id },
+      data: {
+        status: 'ESTIMATED',
+        clientRevisionUsed: true,
+        ...(input.dmNotes !== undefined && { dmNotes: input.dmNotes }),
+      },
+    }),
+    prisma.impactAnalysis.update({
+      where: { changeRequestId: id },
+      data: {
+        isDraft: false,
+        submittedAt: new Date(),
+        ...(input.estimatedHours !== undefined && {
+          estimatedHours: new Decimal(input.estimatedHours),
+        }),
+        ...(input.timelineImpact !== undefined && { timelineImpact: input.timelineImpact }),
+        ...(input.affectedDeliverables !== undefined && {
+          affectedDeliverables: input.affectedDeliverables,
+        }),
+        ...(input.revisedMilestones !== undefined && {
+          revisedMilestones: input.revisedMilestones,
+        }),
+        ...(input.resourcesRequired !== undefined && {
+          resourcesRequired: input.resourcesRequired,
+        }),
+        ...(input.recommendation !== undefined && { recommendation: input.recommendation }),
+        ...(input.dmSignature !== undefined && { dmSignature: input.dmSignature }),
+      },
+    }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: 'CLIENT_REVISION',
+        toStatus: 'ESTIMATED',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_DM_REVIEW_RESUBMIT',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber },
+  });
+
+  // Notify PO
+  if (cr.submittedBy?.email && cr.submittedBy.notifyOnCrReturned) {
+    const tpl = dmReviewedEditsEmail(cr.submittedBy.name, cr.crNumber, cr.project.name, id);
+    await sendEmail(cr.submittedBy.email, tpl.subject, tpl.html).catch(() => {});
+  }
+
+  return prisma.changeRequest.findUnique({ where: { id }, include: { impactAnalysis: true } });
 };
 
 // ─── Internal notes ───────────────────────────────────────────────────────────
@@ -706,6 +1272,11 @@ export const submitCR = async (id: string, actorId: string) => {
   });
   if (!cr) throw new AppError(404, 'Change request not found');
   if (cr.submittedById !== actorId) throw new AppError(403, 'Access denied');
+  if (cr.initiatedByDm)
+    throw new AppError(
+      400,
+      'This CR was created by your DM. Use the review flow to confirm or reject it.',
+    );
 
   assertTransition(cr.status, 'SUBMITTED');
 
@@ -776,4 +1347,110 @@ export const submitCR = async (id: string, actorId: string) => {
   }
 
   return updated;
+};
+
+// ─── Finance transitions ──────────────────────────────────────────────────────
+
+export const markInProgress = async (id: string, actorId: string, _actorRole: string) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true } } },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  assertTransition(cr.status, 'IN_PROGRESS');
+
+  const updated = await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: { status: 'IN_PROGRESS' } }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status,
+        toStatus: 'IN_PROGRESS',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_STATUS_CHANGED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber, from: cr.status, to: 'IN_PROGRESS' },
+  });
+
+  return updated[0];
+};
+
+export const markCompleted = async (id: string, actorId: string, _actorRole: string) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true } } },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  assertTransition(cr.status, 'COMPLETED');
+
+  const updated = await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: { status: 'COMPLETED' } }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: cr.status,
+        toStatus: 'COMPLETED',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_STATUS_CHANGED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: { crNumber: cr.crNumber, from: cr.status, to: 'COMPLETED' },
+  });
+
+  return updated[0];
+};
+
+// ─── DM recall ────────────────────────────────────────────────────────────────
+
+export const recallFromClient = async (id: string, actorId: string) => {
+  const cr = await prisma.changeRequest.findUnique({
+    where: { id },
+    include: { project: { select: { name: true } } },
+  });
+  if (!cr) throw new AppError(404, 'Change request not found');
+  if (!cr.initiatedByDm) throw new AppError(400, 'Not a DM-initiated CR');
+  if (cr.createdByDmId !== actorId)
+    throw new AppError(403, 'Only the DM who created this CR can recall it');
+  if (cr.status !== 'PENDING_CLIENT_REVIEW')
+    throw new AppError(400, 'CR can only be recalled while awaiting client review');
+
+  await prisma.$transaction([
+    prisma.changeRequest.update({ where: { id }, data: { status: 'DRAFT' } }),
+    prisma.statusHistory.create({
+      data: {
+        changeRequestId: id,
+        fromStatus: 'PENDING_CLIENT_REVIEW',
+        toStatus: 'DRAFT',
+        changedById: actorId,
+      },
+    }),
+  ]);
+
+  await createAuditLog({
+    event: 'CR_STATUS_CHANGED',
+    actorId,
+    entityType: 'ChangeRequest',
+    entityId: id,
+    metadata: {
+      crNumber: cr.crNumber,
+      from: 'PENDING_CLIENT_REVIEW',
+      to: 'DRAFT',
+      reason: 'DM recalled',
+    },
+  });
+
+  return prisma.changeRequest.findUnique({ where: { id } });
 };

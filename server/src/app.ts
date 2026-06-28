@@ -16,6 +16,9 @@ import { dashboardRouter } from './modules/dashboard/dashboard.routes';
 export const createApp = () => {
   const app = express();
 
+  // Trust Render's proxy so express-rate-limit and req.ip work correctly
+  app.set('trust proxy', 1);
+
   // Security headers
   app.use(helmet());
 
@@ -34,8 +37,9 @@ export const createApp = () => {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
 
-  // Serve local uploads in development (when S3 is not configured)
-  if (!env.S3_ACCESS_KEY) {
+  // Serve local uploads when S3 is not configured (or has a placeholder key)
+  const s3Active = env.S3_ACCESS_KEY && !env.S3_ACCESS_KEY.startsWith('replace_with');
+  if (!s3Active) {
     app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
   }
 

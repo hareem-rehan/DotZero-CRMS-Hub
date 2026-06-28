@@ -63,7 +63,6 @@ function StatCard({
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admins',
   DELIVERY_MANAGER: 'Delivery Managers',
-  PRODUCT_OWNER: 'Product Owners',
   FINANCE: 'Finance',
 };
 
@@ -145,16 +144,18 @@ export default function AdminDashboardPage() {
           {/* Users by role */}
           <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-semibold text-[#2D2D2D]">Active Users by Role</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {(sa?.usersByRole ?? []).map((r) => (
-                <div
-                  key={r.role}
-                  className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-center"
-                >
-                  <p className="text-2xl font-bold text-[#2D2D2D]">{r.count}</p>
-                  <p className="mt-1 text-xs text-[#5D5B5B]">{ROLE_LABELS[r.role] ?? r.role}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-3 gap-3">
+              {(sa?.usersByRole ?? [])
+                .filter((r) => r.role !== 'PRODUCT_OWNER')
+                .map((r) => (
+                  <div
+                    key={r.role}
+                    className="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-center"
+                  >
+                    <p className="text-2xl font-bold text-[#2D2D2D]">{r.count}</p>
+                    <p className="mt-1 text-xs text-[#5D5B5B]">{ROLE_LABELS[r.role] ?? r.role}</p>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -198,7 +199,7 @@ export default function AdminDashboardPage() {
               </select>
               <input
                 type="text"
-                placeholder="Client name…"
+                placeholder="PO name…"
                 value={crClient}
                 onChange={(e) => {
                   setCrClient(e.target.value);
