@@ -20,7 +20,9 @@ const JWT_EXPIRY_REMEMBER = '30d';
 export const authService = {
   async login(input: LoginInput, ipAddress?: string, userAgent?: string) {
     // Multiple accounts can share the same email (different roles) — find the one whose password matches
-    const candidates = await prisma.user.findMany({ where: { email: input.email } });
+    const candidates = await prisma.user.findMany({
+      where: { email: input.email, ...(input.role ? { role: input.role } : {}) },
+    });
 
     // Generic error — never reveal which field is wrong
     const invalidCredentialsError = new AppError(401, 'Invalid email or password');
@@ -111,8 +113,7 @@ export const authService = {
     // Multiple accounts can share the same email — send a reset link for each
     const users = await prisma.user.findMany({ where: { email: input.email } });
 
-    // Always respond with success — never reveal if email exists
-    if (!users.length) return { message: 'If that email exists, a reset link has been sent.' };
+    if (!users.length) throw new AppError(404, 'No account found with that email address.');
 
     for (const user of users) {
       const resetToken = crypto.randomBytes(32).toString('hex');
@@ -127,7 +128,7 @@ export const authService = {
           actorId: user.id,
           entityType: 'User',
           entityId: user.id,
-          metadata: { tokenHash, expiresAt: expiresAt.toISOString() },
+          metadata: { tokenHash, expiresAt: expiresAt.toISOString(), purpose: 'reset' },
         },
       });
 
@@ -140,6 +141,38 @@ export const authService = {
     }
 
     return { message: 'If that email exists, a reset link has been sent.' };
+  },
+
+  async getResetTokenInfo(token: string) {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const tokenRecord = await prisma.auditLog.findFirst({
+      where: {
+        event: 'PASSWORD_RESET_TOKEN',
+        metadata: { path: ['tokenHash'], equals: tokenHash },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!tokenRecord) throw new AppError(400, 'Invalid or expired reset token');
+
+    const metadata = tokenRecord.metadata as { tokenHash: string; expiresAt: string; purpose?: string };
+    if (new Date(metadata.expiresAt) < new Date()) {
+      throw new AppError(400, 'Reset token has expired. Please request a new one.');
+    }
+
+    // If purpose is explicitly stored use it; otherwise fall back to checking lastLogin —
+    // a user who has never logged in must be doing their first-time account setup.
+    if (metadata.purpose) {
+      return { purpose: metadata.purpose as 'setup' | 'reset' };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: tokenRecord.entityId },
+      select: { lastLogin: true },
+    });
+
+    return { purpose: user?.lastLogin ? 'reset' : 'setup' };
   },
 
   async resetPassword(input: ResetPasswordInput) {
@@ -171,6 +204,7 @@ export const authService = {
       data: {
         passwordHash: newHash,
         passwordSetAt: new Date(),
+        lastLogin: new Date(),
         failedLoginAttempts: 0,
         isLocked: false,
       },
@@ -194,7 +228,14 @@ export const authService = {
       entityId: user.id,
     });
 
-    return { message: 'Password reset successfully.' };
+    const jwtToken = jwt.sign(
+      { userId: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion },
+      env.JWT_SECRET,
+      { expiresIn: JWT_EXPIRY_DEFAULT } as jwt.SignOptions,
+    );
+
+    const { passwordHash: _, ...safeUser } = user;
+    return { message: 'Password set successfully.', token: jwtToken, user: safeUser };
   },
 
   async getMe(userId: string) {

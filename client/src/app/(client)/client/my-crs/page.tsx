@@ -78,7 +78,7 @@ function CRTableBody({ crs }: { crs: ReturnType<typeof useCRs>['data'] extends {
           <td className="px-4 py-3 text-[#5D5B5B]">{cr.project.name}</td>
           <td className="px-4 py-3 text-[#5D5B5B] capitalize">{cr.changeType.toLowerCase()}</td>
           <td className="px-4 py-3"><CRPriorityBadge priority={cr.priority} /></td>
-          <td className="px-4 py-3"><CRStatusBadge status={cr.status} /></td>
+          <td className="px-4 py-3"><CRStatusBadge status={cr.status} overrides={{ CLIENT_REVISION: { label: 'Resubmitted', variant: 'orange' } }} /></td>
           <td className="px-4 py-3 text-[#5D5B5B] text-xs">
             {cr.dateOfRequest ? new Date(cr.dateOfRequest).toLocaleDateString() : '—'}
           </td>
@@ -136,9 +136,13 @@ export default function MyCRsPage() {
       setPage(1);
     };
 
-  // Split: ESTIMATED = DM has reviewed & estimated, PO must approve or decline
+  // Split: PENDING_CLIENT_REVIEW = DM-created CR awaiting PO confirmation/rejection
+  const pendingClientReviewCRs = (data?.crs ?? []).filter((cr) => cr.status === 'PENDING_CLIENT_REVIEW');
+  // ESTIMATED = DM has reviewed & estimated, PO must approve or decline
   const actionRequiredCRs = (data?.crs ?? []).filter((cr) => cr.status === 'ESTIMATED');
-  const otherCRs = (data?.crs ?? []).filter((cr) => cr.status !== 'ESTIMATED');
+  const otherCRs = (data?.crs ?? []).filter(
+    (cr) => cr.status !== 'ESTIMATED' && cr.status !== 'PENDING_CLIENT_REVIEW',
+  );
 
   return (
     <PageWrapper title="My Change Requests">
@@ -181,6 +185,30 @@ export default function MyCRsPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* ── Review from DM (PENDING_CLIENT_REVIEW — DM created on behalf of PO) ── */}
+          {pendingClientReviewCRs.length > 0 && (
+            <div className="rounded-lg border border-blue-200 bg-white overflow-hidden shadow-sm">
+              <div className="flex items-center gap-2.5 border-b border-blue-200 bg-blue-50 px-5 py-3">
+                <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <h2 className="text-sm font-semibold text-blue-900">
+                  Review from Delivery Manager
+                  <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white">
+                    {pendingClientReviewCRs.length}
+                  </span>
+                </h2>
+                <p className="text-xs text-blue-700">— your DM created these on your behalf, please review</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <CRTableHead />
+                  <CRTableBody crs={pendingClientReviewCRs} />
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* ── Action Required (ESTIMATED — awaiting PO approval / decline) ── */}
           {actionRequiredCRs.length > 0 && (
             <div className="rounded-lg border border-orange-200 bg-white overflow-hidden shadow-sm">

@@ -12,8 +12,12 @@ export default function NewProjectPage() {
   const [isDraftSaving, setIsDraftSaving] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
-    await createMutation.mutateAsync(formData);
-    router.push('/admin/projects');
+    try {
+      await createMutation.mutateAsync(formData);
+      router.push('/admin/projects');
+    } catch {
+      // error is shown inline via createMutation.isError
+    }
   };
 
   const handleDraft = async (formData: FormData) => {
@@ -21,6 +25,8 @@ export default function NewProjectPage() {
     try {
       await createMutation.mutateAsync(formData);
       router.push('/admin/projects');
+    } catch {
+      // error is shown inline via createMutation.isError
     } finally {
       setIsDraftSaving(false);
     }

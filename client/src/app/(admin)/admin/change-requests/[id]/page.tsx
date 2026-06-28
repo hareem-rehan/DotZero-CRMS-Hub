@@ -398,26 +398,40 @@ export default function AdminCRDetailPage() {
                 (h: {
                   id: string;
                   changedAt: string;
-                  changedBy: { name: string };
+                  changedBy: { name: string; role: string };
                   fromStatus: string;
                   toStatus: string;
                   reason: string | null;
-                }) => (
-                  <li key={h.id} className="space-y-1">
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-xs text-[#5D5B5B] w-24 shrink-0">
-                        {new Date(h.changedAt).toLocaleDateString()}
-                      </span>
-                      <span className="text-[#5D5B5B]">{h.changedBy?.name}</span>
-                      <CRStatusBadge status={h.fromStatus} />
-                      <span className="text-[#5D5B5B]">→</span>
-                      <CRStatusBadge status={h.toStatus} />
-                    </div>
-                    {h.reason && (
-                      <p className="ml-28 text-xs text-[#5D5B5B] italic">"{h.reason}"</p>
-                    )}
-                  </li>
-                ),
+                }) => {
+                  const roleLabel: Record<string, string> = {
+                    PRODUCT_OWNER: 'PO',
+                    DELIVERY_MANAGER: 'DM',
+                    SUPER_ADMIN: 'Admin',
+                    FINANCE: 'Finance',
+                  };
+                  const role = h.changedBy?.role ? roleLabel[h.changedBy.role] ?? h.changedBy.role : null;
+                  return (
+                    <li key={h.id} className="space-y-1">
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="text-xs text-[#5D5B5B] w-24 shrink-0">
+                          {new Date(h.changedAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-[#5D5B5B]">
+                          {h.changedBy?.name}
+                          {role && (
+                            <span className="ml-1 text-xs text-[#5D5B5B] opacity-60">({role})</span>
+                          )}
+                        </span>
+                        <CRStatusBadge status={h.fromStatus} />
+                        <span className="text-[#5D5B5B]">→</span>
+                        <CRStatusBadge status={h.toStatus} />
+                      </div>
+                      {h.reason && (
+                        <p className="ml-28 text-xs text-[#5D5B5B] italic">"{h.reason}"</p>
+                      )}
+                    </li>
+                  );
+                },
               )}
             </ol>
           </div>

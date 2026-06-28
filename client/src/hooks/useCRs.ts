@@ -23,6 +23,9 @@ export interface CRSummary {
   dateOfRequest: string | null;
   version: number;
   updatedAt: string;
+  initiatedByDm: boolean;
+  createdByDmId: string | null;
+  clientNotes: string | null;
   project: {
     id: string;
     name: string;
@@ -31,6 +34,7 @@ export interface CRSummary {
     currency?: string;
   };
   submittedBy: { id: string; name: string };
+  createdByDm?: { id: string; name: string } | null;
   _count: { attachments: number };
 }
 
@@ -42,6 +46,9 @@ export interface CRDetail extends CRSummary {
   submittedById: string;
   projectId: string;
   createdAt: string;
+  dmNotes: string | null;
+  clientNotes: string | null;
+  clientRevisionUsed: boolean;
   attachments: CRAttachment[];
   impactAnalysis: {
     id: string;
@@ -124,6 +131,7 @@ export const useCRs = (params?: {
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;
+  initiatedByDm?: boolean;
 }) => {
   return useQuery({
     queryKey: crKeys.list(params),
@@ -389,6 +397,239 @@ export const useSaveImpactAnalysis = (
   });
 };
 
+// ─── DM-initiated CR mutations ───────────────────────────────────────────────
+
+export interface CreateDMInitiatedCRPayload {
+  projectId: string;
+  title: string;
+  description?: string;
+  businessJustification?: string;
+  priority?: string;
+  changeType?: string;
+  requestingParty?: string;
+  sowRef?: string;
+  dmNotes?: string;
+  estimatedHours: number;
+  timelineImpact?: string;
+  affectedDeliverables?: string;
+  revisedMilestones?: string;
+  resourcesRequired?: string;
+  recommendation?: string;
+  dmSignature?: string;
+}
+
+export const useCreateDMInitiatedCR = (
+  callbacks?: { onSuccess?: (cr: CRDetail) => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateDMInitiatedCRPayload) => {
+      const { data } = await apiClient.post<{ success: boolean; data: CRDetail }>(
+        '/change-requests/dm-initiated',
+        payload,
+      );
+      return data.data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.(data);
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to create CR';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useUpdateDMDraft = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<CreateDMInitiatedCRPayload>) => {
+      const { data } = await apiClient.patch<{ success: boolean; data: CRDetail }>(
+        `/change-requests/${crId}/dm-draft`,
+        payload,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to update draft';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useSendToClient = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post(`/change-requests/${crId}/send-to-client`);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to send to client';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useClientReviewEdit = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { description?: string; businessJustification?: string }) => {
+      const { data } = await apiClient.patch(`/change-requests/${crId}/client-review-edit`, payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to save changes';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useClientConfirmCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { clientNotes?: string; description?: string; businessJustification?: string }) => {
+      const { data } = await apiClient.post(`/change-requests/${crId}/client-confirm`, payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to confirm';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useClientRejectCR = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (reason: string) => {
+      const { data } = await apiClient.post(`/change-requests/${crId}/client-reject`, { reason });
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to reject';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const usePOResubmitWithEdits = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      description?: string;
+      businessJustification?: string;
+      clientNotes?: string;
+      reason: string;
+    }) => {
+      const { data } = await apiClient.post(`/change-requests/${crId}/po-resubmit-edits`, payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to re-submit with edits';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useDMReviewResubmit = (
+  crId: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      dmNotes?: string;
+      estimatedHours?: number;
+      timelineImpact?: string;
+      affectedDeliverables?: string;
+      revisedMilestones?: string;
+      resourcesRequired?: string;
+      recommendation?: string;
+      dmSignature?: string;
+    }) => {
+      const { data } = await apiClient.post(
+        `/change-requests/${crId}/dm-review-resubmit`,
+        payload,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(crId) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to re-submit after review';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
 export const useAddNote = (
   crId: string,
   callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
@@ -407,6 +648,72 @@ export const useAddNote = (
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
         'Failed to add note';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useMarkInProgress = (
+  id: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post(`/change-requests/${id}/mark-in-progress`);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useMarkCompleted = (
+  id: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post(`/change-requests/${id}/mark-completed`);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
+      callbacks?.onError?.(msg);
+    },
+  });
+};
+
+export const useRecallFromClient = (
+  id: string,
+  callbacks?: { onSuccess?: () => void; onError?: (msg: string) => void },
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post(`/change-requests/${id}/recall-from-client`);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: crKeys.all });
+      callbacks?.onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
       callbacks?.onError?.(msg);
     },
   });

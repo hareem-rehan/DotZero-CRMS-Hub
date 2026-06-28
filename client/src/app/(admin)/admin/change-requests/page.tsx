@@ -53,6 +53,7 @@ function CRsTable({
   const [status, setStatus] = useState('');
   const [changeType, setChangeType] = useState('');
   const [priority, setPriority] = useState('');
+  const [dmInitiated, setDmInitiated] = useState<boolean | undefined>(undefined);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useCRs({
@@ -64,6 +65,7 @@ function CRsTable({
     page,
     pageSize: 20,
     assignedToMe: assignedToMe || undefined,
+    initiatedByDm: dmInitiated,
   });
 
   const columns: Column<CRSummary>[] = [
@@ -111,7 +113,16 @@ function CRsTable({
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <CRStatusBadge status={row.status} />,
+      render: (row) => (
+        <div className="flex flex-col gap-1">
+          <CRStatusBadge status={row.status} />
+          {row.initiatedByDm && (
+            <span className="inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold bg-purple-100 text-purple-700">
+              DM Initiated
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'updatedAt',
@@ -174,6 +185,18 @@ function CRsTable({
           options={PRIORITY_OPTIONS}
           className="w-36"
         />
+        <label className="flex items-center gap-2 text-sm text-[#5D5B5B] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-[#D3D3D3] accent-[#7c3aed]"
+            checked={dmInitiated === true}
+            onChange={(e) => {
+              setDmInitiated(e.target.checked ? true : undefined);
+              setPage(1);
+            }}
+          />
+          DM Initiated only
+        </label>
       </div>
 
       <DataTable

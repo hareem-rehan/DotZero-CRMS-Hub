@@ -41,6 +41,8 @@ enum CRStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  PENDING_CLIENT_REVIEW
+  CLIENT_REVISION
 }
 
 enum Priority {
@@ -94,6 +96,7 @@ model User {
   projectAssignments  ProjectUser[]
   managedProjects     Project[]          @relation("ProjectDM")
   submittedCRs        ChangeRequest[]    @relation("CRSubmitter")
+  dmCreatedCRs        ChangeRequest[]    @relation("CRCreatedByDm")
   impactAnalyses      ImpactAnalysis[]
   crApprovals         CRApproval[]
   crVersions          CRVersion[]
@@ -214,12 +217,19 @@ model ChangeRequest {
   sowRef                String?               // Auto-populated from project
   dateOfRequest         DateTime?             // Set on first submission, not draft creation
   lastReminderSentAt    DateTime?             // Tracks 48hr reminder — prevents duplicate sends
+  // DM-initiated flow fields
+  initiatedByDm         Boolean    @default(false)
+  createdByDmId         String?
+  dmNotes               String?    @db.Text
+  clientNotes           String?    @db.Text
+  clientRevisionUsed    Boolean    @default(false)
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
 
   // Relations
   project           Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
   submittedBy       User?            @relation("CRSubmitter", fields: [submittedById], references: [id])
+  createdByDm       User?            @relation("CRCreatedByDm", fields: [createdByDmId], references: [id], onDelete: SetNull)
   attachments       CRAttachment[]
   impactAnalysis    ImpactAnalysis?
   approval          CRApproval?
@@ -233,6 +243,8 @@ model ChangeRequest {
   @@index([crNumber])
   @@index([projectId, status])
   @@index([createdAt])
+  @@index([createdByDmId])
+  @@index([initiatedByDm])
   @@map("change_requests")
 }
 

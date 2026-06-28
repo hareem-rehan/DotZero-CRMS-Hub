@@ -10,7 +10,6 @@ import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { SignatureCanvas } from '@/components/ui/SignatureCanvas';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { sanitizeHtml } from '@/lib/sanitize';
-import { toast } from 'sonner';
 import {
   useCR,
   useSubmitCR,
@@ -20,6 +19,9 @@ import {
   useResubmitCR,
   useCancelCR,
   useCRVersions,
+  useClientRejectCR,
+  useClientReviewEdit,
+  usePOResubmitWithEdits,
 } from '@/hooks/useCRs';
 
 // ─── Role label helper ────────────────────────────────────────────────────────
@@ -76,6 +78,42 @@ function Modal({
           </button>
         </div>
         <div className="overflow-y-auto px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Result modal ─────────────────────────────────────────────────────────────
+
+function ResultModal({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error';
+  message: string;
+  onClose: () => void;
+}) {
+  const isSuccess = type === 'success';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        <div className={`flex items-center justify-between border-b border-[#E5E5E5] px-6 py-4`}>
+          <h3 className={`text-base font-semibold ${isSuccess ? 'text-green-700' : 'text-red-600'}`}>
+            {isSuccess ? 'Success' : 'Error'}
+          </h3>
+          <button onClick={onClose} className="text-[#5D5B5B] hover:text-[#2D2D2D]">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm text-[#2D2D2D]">{message}</p>
+        </div>
+        <div className="flex justify-end border-t border-[#E5E5E5] px-6 py-4">
+          <Button onClick={onClose}>{isSuccess ? 'OK' : 'Close'}</Button>
+        </div>
       </div>
     </div>
   );
@@ -265,9 +303,9 @@ function ResubmitButton({
         {label}
       </Button>
       {disabledReason && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 w-56 rounded-lg bg-[#2D2D2D] px-3 py-2 text-xs text-white text-center shadow-lg">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:block z-10 w-56 rounded-lg bg-[#2D2D2D] px-3 py-2 text-xs text-white text-center shadow-lg">
           {disabledReason}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2D2D2D]" />
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-[#2D2D2D]" />
         </div>
       )}
     </div>
@@ -282,6 +320,10 @@ export default function CRDetailPage() {
   const { data: cr, isLoading, isError } = useCR(id);
   const { data: versions } = useCRVersions(id);
 
+  // Result modal (replaces toast notifications)
+  const [resultModal, setResultModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const showResult = (type: 'success' | 'error', message: string) => setResultModal({ type, message });
+
   // Submit
   const submitCR = useSubmitCR();
   const [confirmSubmit, setConfirmSubmit] = useState(false);
@@ -292,10 +334,10 @@ export default function CRDetailPage() {
   const [poSignature, setPoSignature] = useState('');
   const approveCR = useApproveCR(id, {
     onSuccess: () => {
-      toast.success('CR approved');
+      showResult('success', 'CR approved');
       setApproveStep(null);
     },
-    onError: (msg) => toast.error(msg),
+    onError: (msg) => showResult('error', msg),
   });
 
   // Decline flow
@@ -303,10 +345,10 @@ export default function CRDetailPage() {
   const [declineNotes, setDeclineNotes] = useState('');
   const declineCR = useDeclineCR(id, {
     onSuccess: () => {
-      toast.success('CR declined');
+      showResult('success', 'CR declined');
       setShowDecline(false);
     },
-    onError: (msg) => toast.error(msg),
+    onError: (msg) => showResult('error', msg),
   });
 
   // Defer flow
@@ -314,11 +356,11 @@ export default function CRDetailPage() {
   const [deferReason, setDeferReason] = useState('');
   const deferCR = useDeferCR(id, {
     onSuccess: () => {
-      toast.success('CR deferred');
+      showResult('success', 'CR deferred');
       setShowDefer(false);
       setDeferReason('');
     },
-    onError: (msg) => toast.error(msg),
+    onError: (msg) => showResult('error', msg),
   });
 
   // Resubmit flow
@@ -330,10 +372,10 @@ export default function CRDetailPage() {
   const [resubChangeType, setResubChangeType] = useState('');
   const resubmitCR = useResubmitCR(id, {
     onSuccess: () => {
-      toast.success('CR resubmitted as new version');
+      showResult('success', 'CR resubmitted as new version');
       setShowResubmit(false);
     },
-    onError: (msg) => toast.error(msg),
+    onError: (msg) => showResult('error', msg),
   });
 
   // Cancel flow
@@ -341,17 +383,49 @@ export default function CRDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const cancelCR = useCancelCR(id, {
     onSuccess: () => {
-      toast.success('CR cancelled');
+      showResult('success', 'CR cancelled successfully');
       setShowCancel(false);
       setCancelReason('');
-      router.push('/client/my-crs');
+      setTimeout(() => router.push('/client/my-crs'), 1500);
     },
-    onError: (msg) => toast.error(msg),
+    onError: (msg) => showResult('error', msg),
   });
 
   // Version history panel
   const [showVersions, setShowVersions] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<CRVersionRow | null>(null);
+
+  // DM-initiated: inline edit of description + business justification
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+  const [editBizJustification, setEditBizJustification] = useState('');
+  const clientReviewEdit = useClientReviewEdit(id, {
+    onSuccess: () => { showResult('success', 'Changes saved'); setIsEditing(false); },
+    onError: (msg) => showResult('error', msg),
+  });
+
+  // DM-initiated: Reject back to DM flow
+  const [showClientReject, setShowClientReject] = useState(false);
+  const [clientRejectReason, setClientRejectReason] = useState('');
+  const clientRejectCR = useClientRejectCR(id, {
+    onSuccess: () => {
+      setShowClientReject(false);
+      setClientRejectReason('');
+      showResult('success', 'CR returned to DM successfully');
+      setTimeout(() => router.push('/client/my-crs'), 1500);
+    },
+    onError: (msg) => showResult('error', msg),
+  });
+
+  // DM-initiated: PO re-submit with edits (one-shot)
+  const [showPOResubmit, setShowPOResubmit] = useState(false);
+  const [poResubDescription, setPoResubDescription] = useState('');
+  const [poResubClientNotes, setPoResubClientNotes] = useState('');
+  const [poResubReason, setPoResubReason] = useState('');
+  const poResubmitWithEdits = usePOResubmitWithEdits(id, {
+    onSuccess: () => { showResult('success', 'Edits submitted to DM'); setShowPOResubmit(false); },
+    onError: (msg) => showResult('error', msg),
+  });
 
   // ── Open resubmit form pre-filled ──
   const openResubmit = () => {
@@ -391,7 +465,12 @@ export default function CRDetailPage() {
   const isDeclined = cr.status === 'DECLINED';
   const isDeferred = cr.status === 'DEFERRED';
   const isDraft = cr.status === 'DRAFT';
+  const isPendingClientReview = cr.status === 'PENDING_CLIENT_REVIEW';
   const isCancellable = !['APPROVED', 'DECLINED', 'CANCELLED', 'COMPLETED'].includes(cr.status);
+
+  const isDmInitiated = cr.initiatedByDm;
+  const canPOResubmitWithEdits =
+    isDmInitiated && isEstimated && !cr.clientRevisionUsed;
 
   // ── Resubmission limit checks (mirrors backend rules) ──
   const MAX_RESUBMISSIONS = 2;
@@ -414,6 +493,9 @@ export default function CRDetailPage() {
     : resubWindowExpired
     ? '72-hour resubmission window has expired'
     : null;
+  const resubHoursRemaining = !resubWindowExpired && triggerEntry
+    ? Math.ceil(72 - hoursSinceTrigger)
+    : null;
 
   return (
     <PageWrapper title={cr.crNumber}>
@@ -427,7 +509,7 @@ export default function CRDetailPage() {
           <span className="font-medium text-[#2D2D2D]">{cr.crNumber}</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isDraft && (
+          {isDraft && !isDmInitiated && (
             <>
               <Button variant="secondary" onClick={() => router.push(`/client/my-crs/${id}/edit`)}>
                 Edit Draft
@@ -437,28 +519,48 @@ export default function CRDetailPage() {
               </Button>
             </>
           )}
-          {isEstimated && (
+          {isPendingClientReview && isDmInitiated && (
             <>
+              <Button variant="secondary" onClick={() => setShowClientReject(true)}>
+                Return to DM
+              </Button>
               <Button variant="secondary" onClick={() => setShowDecline(true)}>
                 Decline
               </Button>
-              <Button variant="secondary" onClick={() => setShowDefer(true)}>
-                Defer
-              </Button>
-              <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
               <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
             </>
           )}
-          {isApproved && (
+          {isEstimated && (
+            <>
+              {!isDmInitiated && (
+                <>
+                  <Button variant="secondary" onClick={() => setShowDefer(true)}>
+                    Defer
+                  </Button>
+                  <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
+                </>
+              )}
+              {canPOResubmitWithEdits && (
+                <Button variant="secondary" onClick={() => { setPoResubDescription(cr.description ?? ''); setPoResubClientNotes(cr.clientNotes ?? ''); setPoResubReason(''); setShowPOResubmit(true); }}>
+                  Submit Edits
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setShowDecline(true)}>
+                Decline
+              </Button>
+              <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
+            </>
+          )}
+          {isApproved && !isDmInitiated && (
             <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
           )}
-          {isDeclined && (
+          {isDeclined && !isDmInitiated && (
             <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
           )}
-          {isDeferred && (
+          {isDeferred && !isDmInitiated && (
             <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" />
           )}
-          {isCancellable && !isDraft && !isEstimated && (
+          {isCancellable && !isDraft && !isEstimated && !(isPendingClientReview && isDmInitiated) && (
             <Button variant="ghost" onClick={() => setShowCancel(true)}>
               Cancel CR
             </Button>
@@ -487,9 +589,10 @@ export default function CRDetailPage() {
                   await submitCR.mutateAsync(id);
                   router.push('/client/my-crs');
                 } catch (e: unknown) {
-                  toast.error(
+                  showResult(
+                    'error',
                     (e as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-                      'Failed',
+                      'Failed to submit CR',
                   );
                 } finally {
                   setConfirmSubmit(false);
@@ -530,6 +633,30 @@ export default function CRDetailPage() {
         </div>
       )}
 
+      {/* DM-initiated banner */}
+      {isDmInitiated && (
+        <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <strong>Created by your Delivery Manager on your behalf.</strong>
+          {isPendingClientReview && ' Please review and approve, decline, or return it to the DM.'}
+          {isEstimated && canPOResubmitWithEdits && (
+            <span> You have <strong>1 round of edits</strong> remaining — use it to send changes back to your DM for review.</span>
+          )}
+          {isEstimated && !canPOResubmitWithEdits && cr.clientRevisionUsed && (
+            <span> Your edit round has been used. Please approve or decline this CR.</span>
+          )}
+        </div>
+      )}
+      {/* Resubmit countdown banner (standard CRs only) */}
+      {!isDmInitiated && resubHoursRemaining !== null && (isDeclined || isDeferred || isEstimated) && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Resubmission window closes in <strong className="mx-1">{resubHoursRemaining}h</strong>
+          {resubmissionCount > 0 && <span className="text-amber-600">· {MAX_RESUBMISSIONS - resubmissionCount} of {MAX_RESUBMISSIONS} resubmissions remaining</span>}
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
@@ -542,7 +669,7 @@ export default function CRDetailPage() {
                   {cr.project.name} · {cr.project.code}
                 </p>
               </div>
-              <CRStatusBadge status={cr.status} />
+              <CRStatusBadge status={cr.status} overrides={{ CLIENT_REVISION: { label: 'Resubmitted', variant: 'orange' } }} />
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div>
@@ -576,24 +703,129 @@ export default function CRDetailPage() {
           </div>
 
           {/* Description */}
-          {cr.description && (
+          {(cr.description || (isPendingClientReview && isDmInitiated)) && (
             <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
-              <h3 className="mb-3 text-sm font-semibold text-[#2D2D2D]">Description</h3>
-              <div
-                className="prose prose-sm max-w-none text-[#2D2D2D]"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
-              />
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#2D2D2D]">Description</h3>
+                {isPendingClientReview && isDmInitiated && !isEditing && (
+                  <button
+                    onClick={() => { setEditDescription(cr.description ?? ''); setEditBizJustification(cr.businessJustification ?? ''); setIsEditing(true); }}
+                    className="text-xs font-medium text-[#EF323F] hover:underline"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              {isEditing && isPendingClientReview && isDmInitiated ? (
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={5}
+                  className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+                />
+              ) : cr.description ? (
+                <div
+                  className="prose prose-sm max-w-none text-[#2D2D2D]"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.description) }}
+                />
+              ) : (
+                <p className="text-sm italic text-[#D3D3D3]">No description</p>
+              )}
             </div>
           )}
 
           {/* Business Justification */}
-          {cr.businessJustification && (
+          {(cr.businessJustification || (isPendingClientReview && isDmInitiated)) && (
             <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
-              <h3 className="mb-3 text-sm font-semibold text-[#2D2D2D]">Business Justification</h3>
-              <div
-                className="prose prose-sm max-w-none text-[#2D2D2D]"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
-              />
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#2D2D2D]">Business Justification</h3>
+                {isPendingClientReview && isDmInitiated && !isEditing && (
+                  <button
+                    onClick={() => { setEditDescription(cr.description ?? ''); setEditBizJustification(cr.businessJustification ?? ''); setIsEditing(true); }}
+                    className="text-xs font-medium text-[#EF323F] hover:underline"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              {isEditing && isPendingClientReview && isDmInitiated ? (
+                <>
+                  <textarea
+                    value={editBizJustification}
+                    onChange={(e) => setEditBizJustification(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      onClick={() => clientReviewEdit.mutate({ description: editDescription, businessJustification: editBizJustification })}
+                      loading={clientReviewEdit.isPending}
+                    >
+                      Save Changes
+                    </Button>
+                    <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
+                  </div>
+                </>
+              ) : cr.businessJustification ? (
+                <div
+                  className="prose prose-sm max-w-none text-[#2D2D2D]"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(cr.businessJustification) }}
+                />
+              ) : (
+                <p className="text-sm italic text-[#D3D3D3]">No business justification</p>
+              )}
+            </div>
+          )}
+
+          {/* DM Notes (read-only) — shown for DM-initiated CRs */}
+          {isDmInitiated && cr.dmNotes && (
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
+              <h3 className="mb-2 text-sm font-semibold text-amber-800">DM Notes</h3>
+              <p className="whitespace-pre-wrap text-sm text-amber-900">{cr.dmNotes}</p>
+            </div>
+          )}
+
+          {/* Client Notes — shown for DM-initiated CRs (read-only when not in PENDING_CLIENT_REVIEW) */}
+          {isDmInitiated && cr.clientNotes && (
+            <div className="rounded-xl border border-[#E5E5E5] bg-white p-5">
+              <h3 className="mb-2 text-sm font-semibold text-[#2D2D2D]">Your Notes (submitted)</h3>
+              <p className="whitespace-pre-wrap text-sm text-[#5D5B5B]">{cr.clientNotes}</p>
+            </div>
+          )}
+
+          {/* Impact Analysis — shown for DM-initiated CRs in PENDING_CLIENT_REVIEW (always visible, isDraft=true) */}
+          {isDmInitiated && isPendingClientReview && cr.impactAnalysis && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
+              <h3 className="mb-4 text-sm font-semibold text-blue-900">DM Estimation</h3>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div>
+                  <dt className="text-blue-700">Estimated Hours</dt>
+                  <dd className="mt-0.5 text-xl font-bold text-blue-900">{cr.impactAnalysis.estimatedHours}h</dd>
+                </div>
+                {cr.impactAnalysis.timelineImpact && (
+                  <div>
+                    <dt className="text-blue-700">Timeline Impact</dt>
+                    <dd className="mt-0.5 text-blue-900">{cr.impactAnalysis.timelineImpact}</dd>
+                  </div>
+                )}
+                {cr.impactAnalysis.affectedDeliverables && (
+                  <div className="col-span-2">
+                    <dt className="text-blue-700">Affected Deliverables</dt>
+                    <dd className="mt-0.5 text-blue-900">{cr.impactAnalysis.affectedDeliverables}</dd>
+                  </div>
+                )}
+                {cr.impactAnalysis.recommendation && (
+                  <div className="col-span-2">
+                    <dt className="text-blue-700">DM Recommendation</dt>
+                    <dd className="mt-0.5 font-medium text-blue-900">{cr.impactAnalysis.recommendation}</dd>
+                  </div>
+                )}
+              </dl>
+              <div className="mt-4 flex gap-2">
+                <Button variant="secondary" onClick={() => setShowClientReject(true)}>Return to DM</Button>
+                <Button variant="secondary" onClick={() => setShowDecline(true)}>Decline</Button>
+                <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
+              </div>
             </div>
           )}
 
@@ -638,7 +870,9 @@ export default function CRDetailPage() {
                   <Button variant="secondary" onClick={() => setShowDecline(true)}>
                     Decline
                   </Button>
-                  <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
+                  {!isDmInitiated && (
+                    <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} />
+                  )}
                   <Button onClick={() => setApproveStep('confirm')}>Approve</Button>
                 </div>
               )}
@@ -658,7 +892,7 @@ export default function CRDetailPage() {
                     {new Date(cr.approval.approvedAt).toLocaleDateString()}
                   </p>
                 </div>
-                {isApproved && (
+                {isApproved && !isDmInitiated && (
                   <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
                 )}
               </div>
@@ -687,7 +921,9 @@ export default function CRDetailPage() {
                         </p>
                       )}
                     </div>
-                    <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                    {!isDmInitiated && (
+                      <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                    )}
                   </div>
                 </div>
               );
@@ -715,7 +951,9 @@ export default function CRDetailPage() {
                         </p>
                       )}
                     </div>
-                    <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                    {!isDmInitiated && (
+                      <ResubmitButton canResubmit={canResubmit} disabledReason={resubDisabledReason} onResubmit={openResubmit} label="Resubmit CR" className="shrink-0" />
+                    )}
                   </div>
                 </div>
               );
@@ -1068,6 +1306,96 @@ export default function CRDetailPage() {
       {/* Version snapshot modal */}
       {selectedVersion && (
         <VersionModal version={selectedVersion} onClose={() => setSelectedVersion(null)} />
+      )}
+
+      {/* ── DM-initiated: Reject to DM modal ── */}
+      {showClientReject && (
+        <Modal title="Return CR to DM" onClose={() => setShowClientReject(false)}>
+          <div className="space-y-4">
+            <p className="text-sm text-[#5D5B5B]">
+              This will send <strong>{cr.crNumber}</strong> back to the Delivery Manager. They will be notified and can revise and re-send it.
+            </p>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Reason <span className="text-[#EF323F]">*</span></label>
+              <textarea
+                rows={4}
+                value={clientRejectReason}
+                onChange={(e) => setClientRejectReason(e.target.value)}
+                placeholder="Explain why you are returning this CR…"
+                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setShowClientReject(false)}>Cancel</Button>
+              <Button
+                onClick={() => clientRejectCR.mutate(clientRejectReason)}
+                loading={clientRejectCR.isPending}
+                disabled={!clientRejectReason.trim()}
+              >
+                Return to DM
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── DM-initiated: PO submit edits modal ── */}
+      {showPOResubmit && (
+        <Modal title="Submit Your Edits to DM" onClose={() => setShowPOResubmit(false)}>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              You can make one round of edits. After the DM reviews them, you will only be able to approve or decline.
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Updated Description</label>
+              <textarea
+                rows={5}
+                value={poResubDescription}
+                onChange={(e) => setPoResubDescription(e.target.value)}
+                placeholder="Update the description…"
+                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Your Notes to DM</label>
+              <textarea
+                rows={3}
+                value={poResubClientNotes}
+                onChange={(e) => setPoResubClientNotes(e.target.value)}
+                placeholder="Explain the changes you made…"
+                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#2D2D2D]">Reason for Edits <span className="text-[#EF323F]">*</span></label>
+              <textarea
+                rows={2}
+                value={poResubReason}
+                onChange={(e) => setPoResubReason(e.target.value)}
+                placeholder="Briefly state why you are submitting edits…"
+                className="w-full rounded-lg border border-[#D3D3D3] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#EF323F]"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setShowPOResubmit(false)}>Cancel</Button>
+              <Button
+                onClick={() => poResubmitWithEdits.mutate({ description: poResubDescription || undefined, clientNotes: poResubClientNotes || undefined, reason: poResubReason })}
+                loading={poResubmitWithEdits.isPending}
+                disabled={!poResubReason.trim()}
+              >
+                Submit Edits
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {resultModal && (
+        <ResultModal
+          type={resultModal.type}
+          message={resultModal.message}
+          onClose={() => setResultModal(null)}
+        />
       )}
     </PageWrapper>
   );

@@ -326,10 +326,11 @@ export const getSADashboard = async () => {
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
   const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  const [activeProjects, usersByRole, thisMontCRs, lastMonthCRs, pendingActions] =
+  const [activeProjects, usersByRole, thisMonthCRCount, thisMontCRs, lastMonthCRs, pendingActions] =
     await Promise.all([
       prisma.project.count({ where: { status: 'ACTIVE' } }),
       prisma.user.groupBy({ by: ['role'], where: { isActive: true }, _count: { role: true } }),
+      prisma.changeRequest.count({ where: { createdAt: { gte: thisMonthStart } } }),
       prisma.changeRequest.findMany({
         where: {
           createdAt: { gte: thisMonthStart },
@@ -376,7 +377,7 @@ export const getSADashboard = async () => {
   return {
     activeProjects,
     usersByRole: usersByRole.map((r) => ({ role: r.role, count: r._count.role })),
-    thisMonthCRs: thisMontCRs.length,
+    thisMonthCRs: thisMonthCRCount,
     thisMonthCost,
     lastMonthCost,
     costChangePercent: costChange,

@@ -11,6 +11,17 @@ export const authController = {
     }
   },
 
+  async getResetTokenInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const token = req.query.token as string;
+      if (!token) { res.status(400).json({ success: false, error: 'Missing token', data: null, meta: null }); return; }
+      const result = await authService.getResetTokenInfo(token);
+      res.json({ success: true, data: result, error: null, meta: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.forgotPassword(req.body);

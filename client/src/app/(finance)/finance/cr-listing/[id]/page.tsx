@@ -6,6 +6,8 @@ import { PageWrapper } from '@/components/layouts/PageWrapper';
 import { Button } from '@/components/ui/Button';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { useFinanceCR } from '@/hooks/useDashboard';
+import { useMarkInProgress, useMarkCompleted } from '@/hooks/useCRs';
+import { toast } from 'sonner';
 
 function fmt(n: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
@@ -28,6 +30,14 @@ export default function FinanceCRDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: cr, isLoading } = useFinanceCR(id);
+  const markInProgress = useMarkInProgress(id, {
+    onSuccess: () => toast.success('Marked as In Progress'),
+    onError: (msg) => toast.error(msg),
+  });
+  const markCompleted = useMarkCompleted(id, {
+    onSuccess: () => toast.success('Marked as Completed'),
+    onError: (msg) => toast.error(msg),
+  });
 
   if (isLoading)
     return (
@@ -140,7 +150,25 @@ export default function FinanceCRDetailPage() {
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-3">
+            {cr.status === 'APPROVED' && (
+              <Button
+                onClick={() => markInProgress.mutate()}
+                loading={markInProgress.isPending}
+              >
+                Mark In Progress
+              </Button>
+            )}
+            {cr.status === 'IN_PROGRESS' && (
+              <Button
+                onClick={() => markCompleted.mutate()}
+                loading={markCompleted.isPending}
+              >
+                Mark Completed
+              </Button>
+            )}
+          </div>
           <Button variant="secondary" onClick={() => router.back()}>
             Back to Listing
           </Button>

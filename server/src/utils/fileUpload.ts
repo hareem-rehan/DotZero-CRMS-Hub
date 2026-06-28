@@ -93,8 +93,10 @@ export const uploadToS3 = async (
   const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
   const bucket = env.S3_BUCKET ?? 'dotzero-crms';
 
+  const s3Configured = env.S3_ACCESS_KEY && !env.S3_ACCESS_KEY.startsWith('replace_with');
+
   // In development without AWS credentials, save to local filesystem
-  if (!env.S3_ACCESS_KEY) {
+  if (!s3Configured) {
     const localDir = path.join(LOCAL_UPLOADS_DIR, path.dirname(key));
     fs.mkdirSync(localDir, { recursive: true });
     fs.writeFileSync(path.join(LOCAL_UPLOADS_DIR, key), file.buffer);

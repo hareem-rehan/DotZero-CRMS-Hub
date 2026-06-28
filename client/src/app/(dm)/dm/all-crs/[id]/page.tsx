@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { PageWrapper } from '@/components/layouts/PageWrapper';
 import { Button } from '@/components/ui/Button';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
@@ -35,8 +35,18 @@ function RoleTag({ role }: { role: string }) {
 
 export default function DmCRDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { data: cr, isLoading } = useCR(id);
   const [noteText, setNoteText] = useState('');
+
+  // Redirect DM-initiated CRs to their dedicated action pages
+  useEffect(() => {
+    if (!cr?.initiatedByDm) return;
+    if (cr.status === 'CLIENT_REVISION') router.replace(`/dm/client-revision/${id}`);
+    // DRAFT with clientNotes = returned by PO; plain DRAFT = new draft
+    else if (cr.status === 'DRAFT' && cr.clientNotes) router.replace(`/dm/client-revision/${id}`);
+    else if (cr.status === 'DRAFT') router.replace(`/dm/draft/${id}`);
+  }, [cr, id, router]);
 
   const addNote = useAddNote(id, {
     onSuccess: () => {
@@ -76,7 +86,12 @@ export default function DmCRDetailPage() {
             </div>
             <div>
               <p className="text-xs text-[#5D5B5B]">Status</p>
-              <CRStatusBadge status={cr.status} />
+              <CRStatusBadge
+                status={cr.status}
+                overrides={cr.status === 'PENDING_CLIENT_REVIEW' && cr.clientNotes
+                  ? { PENDING_CLIENT_REVIEW: { label: 'Resubmitted to PO', variant: 'blue' } }
+                  : {}}
+              />
             </div>
           </div>
           <div className="mt-4">

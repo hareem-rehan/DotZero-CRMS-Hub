@@ -5,13 +5,20 @@ import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useForgotPassword } from '@/hooks/useAuth';
+import { isAxiosError } from 'axios';
 
 interface ForgotForm {
   email: string;
 }
 
 export default function ForgotPasswordPage() {
-  const { mutate: forgotPassword, isPending, isSuccess } = useForgotPassword();
+  const { mutate: forgotPassword, isPending, isSuccess, error } = useForgotPassword();
+
+  const errorMessage = error
+    ? isAxiosError(error)
+      ? ((error.response?.data?.error as string) ?? 'Something went wrong')
+      : 'Something went wrong'
+    : null;
 
   const {
     register,
@@ -52,6 +59,12 @@ export default function ForgotPasswordPage() {
       <p className="text-sm text-[#5D5B5B] mb-6">
         Enter your email and we&apos;ll send you a reset link.
       </p>
+
+      {errorMessage && (
+        <div className="mb-4 rounded-md bg-red-50 border border-[#EF323F] px-4 py-3 text-sm text-[#EF323F]">
+          {errorMessage}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Input

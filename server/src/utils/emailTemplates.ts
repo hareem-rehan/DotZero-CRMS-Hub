@@ -239,6 +239,78 @@ export const projectAssignedEmail = (poName: string, projectName: string, newCrU
   `),
 });
 
+// ─── DM-initiated CR emails ───────────────────────────────────────────────────
+
+export const dmCRSentToClientEmail = (
+  poName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+  dmName: string,
+) => ({
+  subject: `CR Created on Your Behalf — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Ready for Your Review</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${poName}, your Delivery Manager <strong>${dmName}</strong> has created a change request on your behalf and it is ready for your review.</p>
+    ${crMeta(crNumber, projectName)}
+    <p style="color:#5D5B5B;font-size:14px">Please review the details and either <strong>confirm</strong> to proceed or <strong>reject</strong> it back to the DM.</p>
+    ${btn('Review Change Request', `${BASE_URL}/client/my-crs/${crId}`)}
+  `),
+});
+
+export const clientRejectedCREmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+  reason: string,
+) => ({
+  subject: `CR Rejected by Client — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Client Rejected the Change Request</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the client has rejected the change request you submitted on their behalf.</p>
+    ${crMeta(crNumber, projectName)}
+    <div style="background:#FFF5F5;border-left:3px solid #EF323F;padding:12px 16px;margin:16px 0;font-size:13px">
+      <strong style="color:#EF323F">Rejection Reason:</strong><br>
+      <span style="color:#2D2D2D">${reason}</span>
+    </div>
+    <p style="color:#5D5B5B;font-size:14px">The CR has been returned to draft. Please revise and re-send to the client.</p>
+    ${btn('Edit & Re-send', `${BASE_URL}/dm/draft/${crId}`)}
+  `),
+});
+
+export const poResubmittedEditsEmail = (
+  dmName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+) => ({
+  subject: `Client Submitted Edits — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Client Has Submitted Edits</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${dmName}, the client has reviewed your change request and submitted some edits for your review.</p>
+    ${crMeta(crNumber, projectName)}
+    <p style="color:#5D5B5B;font-size:14px">Please review their changes, add your comments, and re-submit for final client approval.</p>
+    ${btn('Review Client Edits', `${BASE_URL}/dm/client-revision/${crId}`)}
+  `),
+});
+
+export const dmReviewedEditsEmail = (
+  poName: string,
+  crNumber: string,
+  projectName: string,
+  crId: string,
+) => ({
+  subject: `DM Reviewed Your Edits — ${crNumber}`,
+  html: layout(`
+    <h2 style="margin:0 0 8px;color:#2D2D2D">Change Request Ready for Final Approval</h2>
+    <p style="color:#5D5B5B;font-size:14px">Hi ${poName}, the DM has reviewed your edits and the change request is now ready for your final approval.</p>
+    ${crMeta(crNumber, projectName)}
+    <p style="color:#5D5B5B;font-size:14px">Please review and take your final action: <strong>Approve</strong> or <strong>Decline</strong>.</p>
+    ${btn('Approve or Decline', `${BASE_URL}/client/my-crs/${crId}`)}
+  `),
+});
+
 export const passwordResetEmail = (name: string, resetUrl: string) => ({
   subject: 'Reset Your DotZero Password',
   html: layout(`

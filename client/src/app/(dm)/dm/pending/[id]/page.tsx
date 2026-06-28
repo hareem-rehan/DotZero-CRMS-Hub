@@ -112,7 +112,10 @@ export default function DmCREstimatePage() {
   }
 
   const saveDraft = useSaveImpactAnalysis(id, {
-    onSuccess: () => toast.success('Draft saved'),
+    onSuccess: () => {
+      toast.success('Draft saved');
+      router.push('/dm/pending');
+    },
     onError: (msg) => toast.error(msg),
   });
 
@@ -327,6 +330,7 @@ export default function DmCREstimatePage() {
               step="0.5"
               value={hours}
               onChange={(e) => setHours(e.target.value)}
+              onWheel={(e) => (e.target as HTMLInputElement).blur()}
               disabled={isReadOnly}
               placeholder="e.g. 24"
             />

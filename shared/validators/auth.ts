@@ -11,6 +11,7 @@ export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional().default(false),
+  role: z.enum(['PRODUCT_OWNER', 'DELIVERY_MANAGER', 'FINANCE', 'SUPER_ADMIN']).optional(),
 });
 
 export const registerSchema = z

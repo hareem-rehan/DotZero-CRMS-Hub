@@ -55,6 +55,8 @@ const CR_STATUS_MAP: Record<string, { label: string; variant: BadgeProps['varian
   IN_PROGRESS: { label: 'In Progress', variant: 'purple' },
   COMPLETED: { label: 'Completed', variant: 'green' },
   CANCELLED: { label: 'Cancelled', variant: 'gray' },
+  PENDING_CLIENT_REVIEW: { label: 'Pending PO Review', variant: 'yellow' },
+  CLIENT_REVISION: { label: 'Resubmitted by PO', variant: 'orange' },
 };
 
 export function CRStatusBadge({

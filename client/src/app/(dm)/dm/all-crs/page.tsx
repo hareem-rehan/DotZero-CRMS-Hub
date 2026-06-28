@@ -89,7 +89,12 @@ export default function DmAllCRsPage() {
       render: (row) => (
         <CRStatusBadge
           status={row.status}
-          overrides={{ SUBMITTED: { label: 'Pending Estimation', variant: 'blue' } }}
+          overrides={{
+            SUBMITTED: { label: 'Pending Estimation', variant: 'blue' },
+            ...(row.status === 'PENDING_CLIENT_REVIEW' && row.clientNotes
+              ? { PENDING_CLIENT_REVIEW: { label: 'Resubmitted to PO', variant: 'blue' } }
+              : {}),
+          }}
         />
       ),
     },

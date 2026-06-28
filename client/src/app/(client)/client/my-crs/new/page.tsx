@@ -15,6 +15,29 @@ import { apiClient } from '@/lib/apiClient';
 import { useMyProjects } from '@/hooks/useProjects';
 import { useCreateCR, useSubmitCR } from '@/hooks/useCRs';
 
+function ErrorModal({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#E5E5E5] px-6 py-4">
+          <h3 className="text-base font-semibold text-red-600">Error</h3>
+          <button onClick={onClose} className="text-[#5D5B5B] hover:text-[#2D2D2D]">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm text-[#2D2D2D]">{message}</p>
+        </div>
+        <div className="flex justify-end border-t border-[#E5E5E5] px-6 py-4">
+          <Button onClick={onClose}>OK</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const schema = z.object({
@@ -48,16 +71,17 @@ export default function NewCRPage() {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [hasDraftBanner, setHasDraftBanner] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftIdRef = useRef<string | null>(null);
 
-  const { data: myProjects } = useMyProjects();
+  const { data: myProjects, isLoading: projectsLoading } = useMyProjects();
   const projectOptions = (myProjects ?? []).map((p) => ({
     value: p.id,
     label: `${p.name} (${p.code})`,
   }));
+  const noProjects = !projectsLoading && myProjects !== undefined && myProjects.length === 0;
 
   const createCR = useCreateCR();
   const submitCR = useSubmitCR();
@@ -154,9 +178,9 @@ export default function NewCRPage() {
 
   // ── Save draft manually ───────────────────────────────────────────────────────
   const onSaveDraft = handleSubmit(async (values) => {
-    setSubmitError('');
+    setSubmitError(null);
     try {
-      const cr = await createCR.mutateAsync({
+      await createCR.mutateAsync({
         payload: {
           projectId: values.projectId,
           title: values.title,
@@ -168,7 +192,7 @@ export default function NewCRPage() {
         files,
       });
       localStorage.removeItem(DRAFT_KEY);
-      router.push(`/client/my-crs/${cr.id}/edit`);
+      router.push('/client/my-crs');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setSubmitError(msg ?? 'Failed to save draft');
@@ -177,11 +201,12 @@ export default function NewCRPage() {
 
   // ── Submit ────────────────────────────────────────────────────────────────────
   const onSubmit = handleSubmit(async (values) => {
-    setSubmitError('');
+    setSubmitError(null);
     try {
       let crId = draftIdRef.current;
       if (!crId) {
-        // No draft yet — create it now
+        // No draft yet — create it now and immediately persist the id so
+        // retries don't create another CR if submitCR fails.
         const cr = await createCR.mutateAsync({
           payload: {
             projectId: values.projectId,
@@ -194,6 +219,7 @@ export default function NewCRPage() {
           files,
         });
         crId = cr.id;
+        draftIdRef.current = crId;
       } else {
         // Draft exists — always update with latest values before submitting
         await apiClient.patch(`/change-requests/${crId}`, {
@@ -213,6 +239,8 @@ export default function NewCRPage() {
     }
   });
 
+
+
   const isLoading = createCR.isPending || submitCR.isPending;
 
   return (
@@ -231,6 +259,13 @@ export default function NewCRPage() {
             >
               Discard &amp; Start Fresh
             </button>
+          </div>
+        )}
+
+        {/* No projects warning */}
+        {noProjects && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            You have no active projects assigned to your account. Please contact your administrator to be assigned to a project before creating a change request.
           </div>
         )}
 
@@ -338,11 +373,6 @@ export default function NewCRPage() {
           <FileUpload files={files} onFilesChange={setFiles} label="Supporting documents" />
         </div>
 
-        {/* Error */}
-        {submitError && (
-          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</p>
-        )}
-
         {/* Actions */}
         <div className="flex items-center justify-between pb-6">
           <Button variant="secondary" type="button" onClick={() => router.back()}>
@@ -369,6 +399,10 @@ export default function NewCRPage() {
           </div>
         </div>
       </form>
+
+      {submitError && (
+        <ErrorModal message={submitError} onClose={() => setSubmitError(null)} />
+      )}
     </PageWrapper>
   );
 }

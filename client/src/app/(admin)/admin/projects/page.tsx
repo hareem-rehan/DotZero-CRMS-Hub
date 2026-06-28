@@ -18,6 +18,7 @@ import {
   Project,
 } from '@/hooks/useProjects';
 import { toast } from 'sonner';
+import { isAxiosError } from 'axios';
 
 const STATUS_FILTER_OPTIONS = [
   { value: '', label: 'All Statuses' },
@@ -40,7 +41,7 @@ function ActionsMenu({
   onDelete: (row: Project) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [dropUp, setDropUp] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,8 +55,13 @@ function ActionsMenu({
   const handleOpen = () => {
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      // Flip upward if less than 200px below the button to the bottom of viewport
-      setDropUp(window.innerHeight - rect.bottom < 200);
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 200) {
+        // flip upward
+        setMenuStyle({ position: 'fixed', bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
+      } else {
+        setMenuStyle({ position: 'fixed', top: rect.bottom + 4, right: window.innerWidth - rect.right });
+      }
     }
     setOpen((v) => !v);
   };
@@ -80,7 +86,8 @@ function ActionsMenu({
         <div
           role="menu"
           aria-label="Project actions"
-          className={`absolute right-0 z-50 w-44 rounded-xl border border-[#E5E5E5] bg-white shadow-lg py-1 ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+          style={menuStyle}
+          className="z-[9999] w-44 rounded-xl border border-[#E5E5E5] bg-white shadow-lg py-1"
         >
           {/* View */}
           <Link
@@ -257,8 +264,11 @@ export default function ProjectsListPage() {
         await archiveMutation.mutateAsync(archiveTarget.id);
         toast.success(`"${archiveTarget.name}" archived`);
       }
-    } catch {
-      toast.error('Action failed. Please try again.');
+    } catch (err) {
+      const msg = isAxiosError(err)
+        ? (err.response?.data?.error ?? 'Action failed. Please try again.')
+        : 'Action failed. Please try again.';
+      toast.error(msg);
     } finally {
       setArchiveTarget(null);
     }

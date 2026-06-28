@@ -131,11 +131,11 @@ export const createUser = async (input: CreateUserInput, actorId: string) => {
       actorId: user.id,
       entityType: 'User',
       entityId: user.id,
-      metadata: { tokenHash, expiresAt: expiresAt.toISOString() },
+      metadata: { tokenHash, expiresAt: expiresAt.toISOString(), purpose: 'setup' },
     },
   });
 
-  const setupLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
+  const setupLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}&type=setup`;
 
   const welcomeTpl = welcomeEmail(user.name, setupLink);
   await sendEmail(user.email, welcomeTpl.subject, welcomeTpl.html);
@@ -236,11 +236,11 @@ export const resendWelcomeEmail = async (id: string, actorId: string) => {
       actorId: user.id,
       entityType: 'User',
       entityId: user.id,
-      metadata: { tokenHash, expiresAt: expiresAt.toISOString() },
+      metadata: { tokenHash, expiresAt: expiresAt.toISOString(), purpose: 'setup' },
     },
   });
 
-  const setupLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
+  const setupLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}&type=setup`;
 
   const resendTpl = welcomeEmail(user.name, setupLink);
   await sendEmail(user.email, resendTpl.subject, resendTpl.html);
@@ -314,7 +314,7 @@ export const adminResetPassword = async (id: string, actorId: string) => {
       actorId: user.id,
       entityType: 'User',
       entityId: user.id,
-      metadata: { tokenHash, expiresAt: expiresAt.toISOString() },
+      metadata: { tokenHash, expiresAt: expiresAt.toISOString(), purpose: 'setup' },
     },
   });
 

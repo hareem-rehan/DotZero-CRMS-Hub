@@ -28,8 +28,12 @@ export default function EditProjectPage() {
   }
 
   const handleSubmit = async (formData: FormData) => {
-    await updateMutation.mutateAsync(formData);
-    router.push(`/admin/projects/${id}`);
+    try {
+      await updateMutation.mutateAsync(formData);
+      router.push(`/admin/projects/${id}`);
+    } catch {
+      // error displayed inline via updateMutation.isError
+    }
   };
 
   return (

@@ -27,10 +27,19 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // 401 interceptor — clear auth and redirect to login on session expiry
+// Skip redirect for auth endpoints (login/register/forgot-password) so they
+// can display their own inline error messages.
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (typeof window !== 'undefined' && error?.response?.status === 401) {
+    const url: string = error?.config?.url ?? '';
+    const isAuthEndpoint =
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/forgot-password') ||
+      url.includes('/auth/reset-password') ||
+      url.includes('/auth/magic-login');
+    if (typeof window !== 'undefined' && error?.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('auth-store');
       window.location.href = '/login';
     }

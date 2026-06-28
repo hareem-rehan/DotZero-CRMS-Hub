@@ -152,10 +152,13 @@ export const createProject = async (
   if (input.assignedDmId) {
     const dm = await prisma.user.findUnique({
       where: { id: input.assignedDmId },
-      select: { email: true, name: true },
+      select: { email: true, name: true, lastLogin: true },
     });
     if (dm) {
-      const tpl = dmAssignedEmail(dm.name, project.name, `${env.CLIENT_URL}/dm/pending`);
+      const portalUrl = dm.lastLogin
+        ? `${env.CLIENT_URL}/dm/pending`
+        : `${env.CLIENT_URL}/login?notice=setup_required`;
+      const tpl = dmAssignedEmail(dm.name, project.name, portalUrl);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
     }
   }
@@ -235,10 +238,13 @@ export const updateProject = async (
   if (input.assignedDmId && input.assignedDmId !== project.assignedDmId) {
     const dm = await prisma.user.findUnique({
       where: { id: input.assignedDmId },
-      select: { email: true, name: true },
+      select: { email: true, name: true, lastLogin: true },
     });
     if (dm) {
-      const tpl = dmAssignedEmail(dm.name, updated.name, `${env.CLIENT_URL}/dm/pending`);
+      const portalUrl = dm.lastLogin
+        ? `${env.CLIENT_URL}/dm/pending`
+        : `${env.CLIENT_URL}/login?notice=setup_required`;
+      const tpl = dmAssignedEmail(dm.name, updated.name, portalUrl);
       await sendEmail(dm.email, tpl.subject, tpl.html).catch(() => {});
     }
   }

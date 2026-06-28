@@ -26,6 +26,7 @@ authRouter.post(
   validate(resetPasswordSchema),
   authController.resetPassword,
 );
+authRouter.get('/reset-password/info', authController.getResetTokenInfo);
 authRouter.post('/register', authRateLimiter, validate(registerSchema), authController.register);
 authRouter.post('/magic-login', authRateLimiter, authController.magicLogin);
 
