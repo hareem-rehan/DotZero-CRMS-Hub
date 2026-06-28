@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { CRStatusBadge, CRPriorityBadge } from '@/components/ui/Badge';
 import { useCRs } from '@/hooks/useCRs';
-import { useMyProjects, MyProject } from '@/hooks/useProjects';
+import { useMyProjects } from '@/hooks/useProjects';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },

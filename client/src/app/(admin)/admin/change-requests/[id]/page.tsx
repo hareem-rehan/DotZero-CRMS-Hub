@@ -427,7 +427,7 @@ export default function AdminCRDetailPage() {
                         <CRStatusBadge status={h.toStatus} />
                       </div>
                       {h.reason && (
-                        <p className="ml-28 text-xs text-[#5D5B5B] italic">"{h.reason}"</p>
+                        <p className="ml-28 text-xs text-[#5D5B5B] italic">&quot;{h.reason}&quot;</p>
                       )}
                     </li>
                   );

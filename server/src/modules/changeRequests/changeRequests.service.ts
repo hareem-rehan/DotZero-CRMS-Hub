@@ -1310,7 +1310,7 @@ export const submitCR = async (id: string, actorId: string) => {
 
 // ─── Finance transitions ──────────────────────────────────────────────────────
 
-export const markInProgress = async (id: string, actorId: string, actorRole: string) => {
+export const markInProgress = async (id: string, actorId: string, _actorRole: string) => {
   const cr = await prisma.changeRequest.findUnique({
     where: { id },
     include: { project: { select: { name: true } } },
@@ -1336,7 +1336,7 @@ export const markInProgress = async (id: string, actorId: string, actorRole: str
   return updated[0];
 };
 
-export const markCompleted = async (id: string, actorId: string, actorRole: string) => {
+export const markCompleted = async (id: string, actorId: string, _actorRole: string) => {
   const cr = await prisma.changeRequest.findUnique({
     where: { id },
     include: { project: { select: { name: true } } },
